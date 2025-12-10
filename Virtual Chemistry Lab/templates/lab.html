@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Virtual Chemistry Lab</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
+  
+  <style>
+    body { font-family:'Inter',sans-serif; background:#f0f4f8; margin:0; color:#0d47a1; }
+    header { padding:24px 0; background: #0d47a1; color: #ffffff; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,0.2); }
+    .lab-main { max-width:1200px; margin:32px auto; background:#ffffff; border-radius:18px; box-shadow:0 8px 32px rgba(33,150,243,0.08); padding:32px; }
+    .lab-flex { display:flex; gap:32px; flex-wrap:wrap; }
+    .side-panel { flex:0 0 220px; }
+    .side-panel h2 { font-size:1.2em; margin-bottom:12px; color: #0d47a1; }
+    .item-list { display:flex; flex-direction:column; gap:10px; }
+    .item { display:flex; align-items:center; gap:10px; padding:10px 14px; background:#e3f2fd; border-radius:8px; cursor:grab; font-size:1em; transition:box-shadow .2s; color: #0d47a1; }
+    .item img { width:32px;height:32px; }
+    .item:hover { box-shadow:0 2px 8px rgba(13,71,161,0.5); }
+    .workspace { flex:1; border:2px dashed #90caf9; border-radius:16px; padding:28px 18px; background:#f9fbfc; text-align:center; min-width:320px; color: #0d47a1; }
+    .workspace.over { background:#bbdefb; }
+    #exp-title { font-size:1.5em; margin-bottom:8px; color:#0d47a1; }
+    #exp-image { max-width:120px; margin:10px 0; }
+    #logic-text { color:#0d47a1; font-size:1.1em; margin-bottom:18px; }
+    #workspace-items { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:18px; }
+    #simulate-btn { margin-top:10px; padding:10px 32px; background:#1976d2; color:#ffffff; border:none; border-radius:8px; font-size:1em; font-weight:600; cursor:pointer; transition:background .2s; }
+    #simulate-btn:disabled { background:#90caf9; cursor:not-allowed; }
+    #result { margin-top:22px; font-size:1.1em; background:#e3f2fd; border-radius:8px; padding:12px; min-height:32px; color: #0d47a1; }
+    #exp-details { margin:24px 0 0 0; text-align:left; background:#f5faff; border-radius:12px; padding:18px; box-shadow:0 2px 8px #e3f2fd; color: #0d47a1; }
+    #exp-details h3 { margin-top:0; color:#0d47a1; }
+    #exp-details ul { margin:8px 0 0 18px; }
+    #exp-details li > strong { display: block; margin-top: 5px; } /* Improved spacing for details list */
+    
+    /* 1. CSS Change: Style the subscript tag for chemical formulas */
+    #exp-details sub {
+        vertical-align: sub;
+        font-size: 0.7em; 
+        line-height: 0;
+        position: relative;
+        bottom: -0.2em; 
+    }
+    
+    #submit-result-section { margin-top:24px; display:none; background:#0d47a1; border-radius:12px; padding:18px; color:#ffffff; }
+    #submit-result-section textarea { width:95%; height:70px; border-radius:8px; border:1px solid #1a237e; padding:10px; font-size:1em; background: #1a237e; color: #ffffff; }
+    #submit-observation-btn { margin-top:10px; padding:10px 28px; background:#1a237e; color:#ffffff; border:none; border-radius:8px; font-size:1em; font-weight:600; cursor:pointer; }
+    #submit-status { margin-top:10px; font-weight:500; color: #ffffff; }
+    @media (max-width:900px) {
+      .lab-flex { flex-direction:column; }
+      .side-panel { flex:1 1 100%; }
+    }
+
+    /* Chatbot Widget Styles (omitted for brevity, assume they are correct) */
+    /* ... */
+    #chatbot-widget { position: fixed; bottom: 24px; right: 24px; width: 350px; max-width: 95vw; z-index: 9999; font-family: 'Arial', sans-serif; }
+    #chatbot-header { background: #0d47a1; color: #ffffff; padding: 14px 18px; border-radius: 16px 16px 0 0; font-weight: 600; cursor: pointer; font-size: 18px; }
+    #chatbot-body { background: #ffffff; border: 1px solid #90caf9; border-top: none; height: 340px; overflow-y: auto; padding: 16px; display: none; box-shadow: 0 8px 32px rgba(0,0,0,0.18); color: #0d47a1; }
+    #chatbot-input-area { display: none; background: #ffffff; border: 1px solid #90caf9; border-top: none; border-radius: 0 0 16px 16px; padding: 10px; gap: 8px; }
+    #chatbot-input { width: 70%; padding: 8px 12px; border-radius: 8px; border: 1px solid #b3c6e0; font-size: 14px; }
+    #chatbot-send { padding: 8px 18px; background: #0d47a1; color: #ffffff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    #chatbot-send:hover { background: #1a237e; }
+    .chatbot-message { margin-bottom: 12px; padding: 10px 14px; border-radius: 16px; max-width: 80%; word-wrap: break-word; line-height: 1.4; font-size: 15px; }
+    .chatbot-user { background: #0d47a1; color: #ffffff; margin-left: auto; text-align: right; }
+    .chatbot-bot { background: #f8f9fa; border: 1px solid #e9ecef; margin-right: auto; color: #222; }
+
+    /* Chatbot Floating Logo Widget */
+    #chatbot-fab { position: fixed; bottom: 28px; right: 28px; width: 64px; height: 64px; background: #0d47a1; border-radius: 50%; box-shadow: 0 4px 24px rgba(30,60,114,0.18); display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10001; transition: box-shadow 0.2s; }
+    #chatbot-fab:hover { box-shadow: 0 8px 32px rgba(30,60,114,0.28); }
+    #chatbot-fab img { width: 38px; height: 38px; display: block; }
+    @keyframes chatbot-popin { from { transform: scale(0.8); opacity: 0; } to  { transform: scale(1); opacity: 1; } }
+    @media (max-width: 700px) { #chatbot-widget { right: 2vw; width: 96vw; } #chatbot-fab { right: 2vw; } }
+
+  </style>
+</head>
+<body>
+<header>
+  <h1>🔬 Virtual Chemistry Lab</h1>
+  <h3> Drag and Drop elements in the table to perform experiments </h3>
+</header>
+<div class="lab-main">
+  <div class="lab-flex">
+    <div class="side-panel chemicals">
+      <h2>Chemicals</h2>
+      <div id="chemicals-list" class="item-list"></div>
+    </div>
+    <div class="side-panel equipment">
+      <h2>Equipment</h2>
+      <div id="equipment-list" class="item-list"></div>
+    </div>
+    <div class="workspace" id="workspace">
+      <h2 id="exp-title">Loading...</h2>
+      <img id="exp-image" src="" alt="" style="display:none;">
+      <p id="logic-text"></p>
+      <div id="workspace-items"></div>
+      
+      <button id="simulate-btn" disabled>Simulate Reaction</button> 
+      
+      <div id="result"></div>
+      <div id="exp-details" style="display:none;">
+        <h3>Experiment Details</h3>
+        <ul id="exp-details-list"></ul>
+      </div>
+      <div id="submit-result-section">
+        <textarea id="student-observation" placeholder="Write your observation..."></textarea><br>
+        <button id="submit-observation-btn">Submit</button>
+        <div id="submit-status"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+// Chemical Formulas (H₂O, Fe₃O₄, etc.) have been converted to use HTML <sub> tags (H<sub>2</sub>O, Fe<sub>3</sub>O<sub>4</sub>, etc.)
+// Ion charges (Mn⁴⁺, SO₄²⁻) are converted to <sup> tags (Mn<sup>4+</sup>, SO<sub>4</sub><sup>2-</sup>)
+// This ensures correct visual rendering without requiring a library like MathJax.
+
+const API_BASE = "http://127.0.0.1:5000";
+
+// --- All 60 experiments defined here ---
+const EXPERIMENT_DATA = {
+
+  // Class 9/10 Experiments (Separations & Basic Reactions)
+  "sodium-water": {
+    title: "Reaction of Sodium with Water",
+    equipment: ["Beaker", "Water trough", "Forceps", "Glass rod"],
+    chemicals: ["Sodium", "Water", "Phenolphthalein"],
+    formula: "2Na (s) + 2H<sub>2</sub>O (l) → 2NaOH (aq) + H<sub>2</sub> (g)",
+    logic: "Sodium reacts vigorously with water producing NaOH and H₂ gas. Heat may ignite Hydrogen.",
+    result: "Observation: Sodium floats, moves rapidly, and may catch fire. The solution turns pink with phenolphthalein (alkaline)."
+  },
+  "salt-sand-separation": {
+    title: "Salt + Sand Separation",
+    equipment: ["Beaker", "Filter paper", "Evaporating dish"],
+    chemicals: ["Salt", "Sand", "Water"],
+    formula: "No chemical reaction (physical separation)",
+    logic: "Filter the sand; evaporate water to recover salt crystals.",
+    result: "Observation: Sand is separated by filtration; salt is recovered as crystals after evaporation."
+  },
+  "sublimation-nh4cl": {
+    title: "Sublimation of NH₄Cl",
+    equipment: ["Watch glass", "Tripod", "Bunsen burner"],
+    chemicals: ["NH₄Cl"],
+    formula: "NH<sub>4</sub>Cl (s) ⇌ NH<sub>3</sub> (g) + HCl (g)",
+    logic: "NH₄Cl sublimes on heating and condenses on cooler glass.",
+    result: "Observation: White fumes deposit as NH₄Cl on cooler part of the apparatus."
+  },
+  "paper-chromatography-9": {
+    title: "Paper Chromatography",
+    equipment: ["Filter paper", "Beaker", "Capillary"],
+    chemicals: ["Ink/dye solution", "Solvent"],
+    formula: "No chemical reaction (physical separation)",
+    logic: "Dyes separate on filter paper by solvent movement.",
+    result: "Observation: Colored spots appear at different heights, showing separation of components."
+  },
+  "chalk-filtration": {
+    title: "Chalk Filtration",
+    equipment: ["Beaker", "Filter paper"],
+    chemicals: ["Chalk powder", "Water"],
+    formula: "No chemical reaction (physical separation)",
+    logic: "Chalk suspended in water is removed using filtration.",
+    result: "Observation: Chalk remains on filter paper; clear water passes through."
+  },
+  "iron-cu-so4": {
+    title: "Iron + CuSO₄ Displacement",
+    equipment: ["Test tube", "Tongs"],
+    chemicals: ["Iron filings", "Copper sulphate solution"],
+    formula: "Fe (s) + CuSO<sub>4</sub> (aq) → FeSO<sub>4</sub> (aq) + Cu (s)",
+    logic: "Iron displaces Copper forming reddish-brown copper on iron.",
+    result: "Observation: Solution turns green; reddish-brown copper deposits on iron."
+  },
+  "burning-magnesium": {
+    title: "Burning Magnesium",
+    equipment: ["Tongs", "Bunsen burner"],
+    chemicals: ["Magnesium ribbon"],
+    formula: "2Mg (s) + O<sub>2</sub> (g) → 2MgO (s)",
+    logic: "Magnesium burns with bright flame producing MgO white ash.",
+    result: "Observation: Intense white flame; white powdery ash (MgO) forms."
+  },
+  "heating-fe-so4": {
+    title: "Heating Ferrous Sulphate",
+    equipment: ["Evaporating dish", "Bunsen burner"],
+    chemicals: ["FeSO₄ crystals"],
+    formula: "2FeSO<sub>4</sub> (s) → Fe<sub>2</sub>O<sub>3</sub> (s) + SO<sub>2</sub> (g) + SO<sub>3</sub> (g)",
+    logic: "On heating green FeSO₄ decomposes with color/gas change.",
+    result: "Observation: Green crystals turn brown; smell of SO₂ gas."
+  },
+  "heating-cuso4": {
+    title: "Heating CuSO₄ Crystals",
+    equipment: ["Test tube", "Bunsen burner"],
+    chemicals: ["CuSO₄ crystals", "Water"],
+    formula: "CuSO<sub>4</sub>·5H<sub>2</sub>O (s) ⇌ CuSO<sub>4</sub> (s) + 5H<sub>2</sub>O (g)",
+    logic: "Blue crystals lose water, turn white. Rehydrate to blue.",
+    result: "Observation: Blue crystals turn white on heating; blue color returns with water."
+  },
+  "baking-vinegar": {
+    title: "Baking Soda + Vinegar",
+    equipment: ["Beaker", "Balloon"],
+    chemicals: ["Baking soda", "Vinegar"],
+    formula: "NaHCO<sub>3</sub> (s) + CH<sub>3</sub>COOH (aq) → CO<sub>2</sub> (g) + H<sub>2</sub>O (l) + CH<sub>3</sub>COONa (aq)",
+    logic: "CO₂ gas inflates balloon when two react.",
+    result: "Observation: Effervescence; balloon inflates due to CO₂ gas."
+  },
+
+  // Class 10 Experiments (Chemical Reactions & Acids/Bases)
+  "combination-reaction": {
+    title: "Combination Reaction",
+    equipment: ["Test tube"],
+    chemicals: ["Iron filings", "Oxygen (air)"],
+    formula: "3Fe (s) + 2O<sub>2</sub> (g) → Fe<sub>3</sub>O<sub>4</sub> (s)",
+    logic: "Two reactants combine forming single compound.",
+    result: "Observation: Iron filings turn black due to Fe₃O₄ formation."
+  },
+  "decomposition-kmno4": {
+    title: "Decomposition (KMnO₄)",
+    equipment: ["Test tube", "Bunsen burner"],
+    chemicals: ["Potassium permanganate"],
+    formula: "2KMnO<sub>4</sub> (s) → K<sub>2</sub>MnO<sub>4</sub> (s) + MnO<sub>2</sub> (s) + O<sub>2</sub> (g)",
+    logic: "On heating KMnO₄ decomposes into simpler products.",
+    result: "Observation: Gas bubbles (O₂) evolve; color changes from purple to green/black."
+  },
+  "displacement-reaction": {
+    title: "Displacement Reaction",
+    equipment: ["Test tube"],
+    chemicals: ["Iron", "Copper sulphate"],
+    formula: "Fe (s) + CuSO<sub>4</sub> (aq) → FeSO<sub>4</sub> (aq) + Cu (s)",
+    logic: "Iron displaces copper forming brown deposit.",
+    result: "Observation: Solution turns green; brown copper deposits."
+  },
+  "double-displacement": {
+    title: "Double Displacement",
+    equipment: ["Test tube"],
+    chemicals: ["Lead nitrate", "Potassium iodide"],
+    formula: "Pb(NO<sub>3</sub>)<sub>2</sub> (aq) + 2KI (aq) → PbI<sub>2</sub> (s) + 2KNO<sub>3</sub> (aq)",
+    logic: "Mixing causes yellow precipitate (PbI₂).",
+    result: "Observation: Bright yellow precipitate of PbI₂ forms."
+  },
+  "acid-metal-zn-hcl": {
+    title: "Acid + Metal (Zn + HCl)",
+    equipment: ["Test tube", "Delivery tube"],
+    chemicals: ["Zinc", "Hydrochloric Acid"],
+    formula: "Zn (s) + 2HCl (aq) → ZnCl<sub>2</sub> (aq) + H<sub>2</sub> (g)",
+    logic: "Zn + HCl gives H₂ gas and zinc chloride.",
+    result: "Observation: Effervescence; H₂ gas collected."
+  },
+  "co2-limewater": {
+    title: "CO₂ Test with Limewater",
+    equipment: ["Test tube"],
+    chemicals: ["CO₂ gas", "Limewater"],
+    formula: "Ca(OH)<sub>2</sub> (aq) + CO<sub>2</sub> (g) → CaCO<sub>3</sub> (s) + H<sub>2</sub>O (l)",
+    logic: "CO₂ turns limewater milky (CaCO₃ precipitate).",
+    result: "Observation: Limewater turns milky."
+  },
+  "ph-substances": {
+    title: "pH of Substances",
+    equipment: ["Universal indicator strips"],
+    chemicals: ["Lemon juice", "Soap solution", "Cola"],
+    formula: "No chemical reaction",
+    logic: "Measure pH, observe color change per substance.",
+    result: "Observation: Different substances show different pH colors (e.g., Lemon juice: Red/Orange; Soap solution: Blue/Green)."
+  },
+  "neutralization": {
+    title: "Neutralization (HCl+NaOH)",
+    equipment: ["Beaker", "Indicator"],
+    chemicals: ["HCl", "NaOH"],
+    formula: "HCl (aq) + NaOH (aq) → NaCl (aq) + H<sub>2</sub>O (l)",
+    logic: "Acid + base forms salt & water; pH neutral.",
+    result: "Observation: Indicator color changes; solution becomes neutral."
+  },
+  "electrolysis-water": {
+    title: "Water Electrolysis",
+    equipment: ["Battery", "Electrodes"],
+    chemicals: ["Water", "Dilute acid"],
+    formula: "2H<sub>2</sub>O (l) → 2H<sub>2</sub> (g) + O<sub>2</sub> (g) (by electricity)",
+    logic: "Electricity splits water into H₂ and O₂.",
+    result: "Observation: Gas bubbles at electrodes; H₂ at cathode, O₂ at anode."
+  },
+  "salt-precipitation": {
+    title: "Salt Precipitation",
+    equipment: ["Test tubes"],
+    chemicals: ["Solutions of salts", "AgNO₃/BaCl₂"],
+    formula: "AgNO<sub>3</sub> (aq) + NaCl (aq) → AgCl (s) + NaNO<sub>3</sub> (aq) OR BaCl<sub>2</sub> (aq) + Na<sub>2</sub>SO<sub>4</sub> (aq) → BaSO<sub>4</sub> (s) + 2NaCl (aq)",
+    logic: "White precipitates confirm ionic presence.",
+    result: "Observation: White/cream precipitate forms."
+  },
+  "thermal-decomposition": {
+    title: "Thermal Decomposition",
+    equipment: ["Test tube"],
+    chemicals: ["Calcium carbonate"],
+    formula: "CaCO<sub>3</sub> (s) → CaO (s) + CO<sub>2</sub> (g) (on heating)",
+    logic: "Heat causes break into simpler compounds.",
+    result: "Observation: CO₂ gas evolved; limewater test confirms."
+  },
+  "heating-copper-air": {
+    title: "Heating Copper in Air",
+    equipment: ["Test tube"],
+    chemicals: ["Copper turnings"],
+    formula: "2Cu (s) + O<sub>2</sub> (g) → 2CuO (s)",
+    logic: "Forms black copper oxide layer.",
+    result: "Observation: Copper turns black due to CuO formation."
+  },
+  "rusting-iron": {
+    title: "Rusting of Iron",
+    equipment: ["Jar"],
+    chemicals: ["Iron nail", "Water", "Air"],
+    formula: "4Fe (s) + 3O<sub>2</sub> (g) + 6H<sub>2</sub>O (l) → 4Fe(OH)<sub>3</sub> (s)",
+    logic: "Wet air causes brown flaky rust.",
+    result: "Observation: Brown flaky rust forms on iron."
+  },
+  "indicator-reaction": {
+    title: "Indicator Reaction",
+    equipment: ["Test tubes"],
+    chemicals: ["Litmus", "Phenolphthalein"],
+    formula: "No chemical reaction (Acid-base indicator changes color)",
+    logic: "Indicator changes color in acid/base.",
+    result: "Observation: Litmus turns red in acid, blue in base; phenolphthalein is pink in base, colorless in acid."
+  },
+
+  // Class 11 Experiments (Physical Chemistry & Basic Organic)
+  "standard-solution": {
+    title: "Standard Solution Preparation",
+    equipment: ["Volumetric flask", "Weighing balance"],
+    chemicals: ["Oxalic acid", "Water"],
+    formula: "No chemical reaction",
+    logic: "Prepare solution of known concentration.",
+    result: "Observation: Oxalic acid is accurately weighed and dissolved to prepare a solution of known molarity. Used for titrations."
+  },
+  "titration-naoh-hcl": {
+    title: "Acid‑Base Titration",
+    equipment: ["Burette", "Flask"],
+    chemicals: ["NaOH", "HCl", "Phenolphthalein"],
+    formula: "NaOH (aq) + HCl (aq) → NaCl (aq) + H<sub>2</sub>O (l)",
+    logic: "Determine concentration via neutralization.",
+    result: "Observation: Pink color disappears at endpoint (neutralization)."
+  },
+  "cuso4-crystallization": {
+    title: "CuSO₄ Crystallization",
+    equipment: ["Evaporating dish"],
+    chemicals: ["CuSO₄", "Water"],
+    formula: "CuSO<sub>4</sub> (aq) + 5H<sub>2</sub>O (l) → CuSO<sub>4</sub>·5H<sub>2</sub>O (s) (on cooling)",
+    logic: "Heat saturated solution; crystals form on cooling.",
+    result: "Observation: Blue crystals of CuSO₄·5H₂O form as solution cools and water evaporates."
+  },
+  "paper-chromatography-11": {
+    title: "Paper Chromatography",
+    equipment: ["Filter paper"],
+    chemicals: ["Ink/leaf extract"],
+    formula: "No chemical reaction (physical separation)",
+    logic: "Separate components on paper via solvent.",
+    result: "Observation: Different colored spots appear, showing separation of pigments or dyes."
+  },
+  "nitrogen-detection": {
+    title: "Nitrogen Detection (Lassaigne's Test)",
+    equipment: ["Bunsen burner"],
+    chemicals: ["Organic compound", "Sodium", "Ferrous sulphate"],
+    formula: "Na + C + N (Organic) → NaCN; NaCN + FeSO<sub>4</sub> → Prussian blue complex",
+    logic: "Lassaigne's test of sodium fusion for N.",
+    result: "Observation: Formation of Prussian blue color confirms nitrogen."
+  },
+  "halogen-detection": {
+    title: "Halogen Detection",
+    equipment: ["Test tubes"],
+    chemicals: ["AgNO₃", "Organic compound"],
+    formula: "NaX + AgNO<sub>3</sub> → AgX (ppt)",
+    logic: "Cl<sup>-</sup>/Br<sup>-</sup>/I<sup>-</sup> form white/cream/yellow ppt.",
+    result: "Observation: White ppt (AgCl), pale yellow (AgBr), or yellow (AgI) confirms halogen."
+  },
+  "flame-tests": {
+    title: "Flame Tests",
+    equipment: ["Platinum wire"],
+    chemicals: ["Metal salts"],
+    formula: "No chemical reaction (light emission)",
+    logic: "Metal ions emit characteristic flame colors.",
+    result: "Observation: Characteristic flame colors identify metal ions (e.g., Na⁺: yellow, K⁺: lilac, Ca²⁺: brick red)."
+  },
+  "nahco3-heating": {
+    title: "NaHCO₃ Heating",
+    equipment: ["Test tube"],
+    chemicals: ["Sodium bicarbonate"],
+    formula: "2NaHCO<sub>3</sub> (s) → Na<sub>2</sub>CO<sub>3</sub> (s) + CO<sub>2</sub> (g) + H<sub>2</sub>O (g)",
+    logic: "Decomposes, releases CO₂, forms Na₂CO₃.",
+    result: "Observation: Gas bubbles (CO₂) evolve; residue is Na₂CO₃."
+  },
+  "anion-detection": {
+    title: "Anion Detection Tests",
+    equipment: ["Test tubes"],
+    chemicals: ["Carbonate/sulfate compounds"],
+    formula: "CO<sub>3</sub><sup>2-</sup> + 2HCl → CO<sub>2</sub> (g) + ... OR SO<sub>4</sub><sup>2-</sup> + BaCl<sub>2</sub> → BaSO<sub>4</sub> (s) + ...",
+    logic: "Group tests: bubble gas, precipitates.",
+    result: "Observation: Effervescence for carbonate; white ppt for sulfate."
+  },
+  "ammonium-ion-test": {
+    title: "Ammonium Ion Test",
+    equipment: ["Test tubes"],
+    chemicals: ["NH₄⁺ salt", "NaOH"],
+    formula: "NH<sub>4</sub>Cl (aq) + NaOH (aq) → NH<sub>3</sub> (g) + NaCl (aq) + H<sub>2</sub>O (l)",
+    logic: "On heating, pungent NH₃ gas is released.",
+    result: "Observation: Pungent smell of ammonia turns moist red litmus blue."
+  },
+  "mp-bp-naphthalene": {
+    title: "MP/BP of Naphthalene",
+    equipment: ["MP apparatus"],
+    chemicals: ["Naphthalene"],
+    formula: "No chemical reaction",
+    logic: "Determine purity via melting/boiling point.",
+    result: "Observation: Sharp melting/boiling point indicates purity; range suggests impurities."
+  },
+  "solubility-water-ethanol": {
+    title: "Solubility in Water/Ethanol",
+    equipment: ["Beakers"],
+    chemicals: ["Solid substance"],
+    formula: "No chemical reaction",
+    logic: "Compare solubility in different solvents.",
+    result: "Observation: Substance dissolves in one solvent but not the other, indicating polarity."
+  },
+  "acids-on-metals": {
+    title: "Acids on Metals",
+    equipment: ["Test tubes"],
+    chemicals: ["Mg/Zn/Fe", "Dilute acid"],
+    formula: "Mg (s) + 2HCl (aq) → MgCl<sub>2</sub> (aq) + H<sub>2</sub> (g) (Example)",
+    logic: "Observe hydrogen evolution from metals.",
+    result: "Observation: Effervescence and gas bubbles (H₂) confirm reaction."
+  },
+  "baeyer-test": {
+    title: "Baeyer’s Test",
+    equipment: ["KMnO₄", "Organic sample"],
+    chemicals: ["KMnO₄", "Organic sample"],
+    formula: "Unsaturated compound + KMnO<sub>4</sub> → Diol + MnO<sub>2</sub> (Brown ppt)",
+    logic: "Purple colour disappears with unsaturation.",
+    result: "Observation: Purple color of KMnO₄ disappears, brown ppt forms if unsaturation is present."
+  },
+
+  // Class 12 Experiments (Volumetric, Analytical & Advanced Organic)
+  "titration-kmno4-oxalic": {
+    title: "KMnO₄ vs Oxalic Titration",
+    equipment: ["Burette"],
+    chemicals: ["KMnO₄", "Oxalic acid"],
+    formula: "2MnO<sub>4</sub><sup>-</sup> + 5C<sub>2</sub>O<sub>4</sub><sup>2-</sup> + 16H<sup>+</sup> → 2Mn<sup>2+</sup> + 10CO<sub>2</sub> + 8H<sub>2</sub>O",
+    logic: "Redox titration, self-indicator.",
+    result: "Observation: Pink color persists at endpoint; oxalic acid is oxidized."
+  },
+  "titration-kmno4-mohr": {
+    title: "KMnO₄ vs Mohr’s Salt",
+    equipment: ["Burette"],
+    chemicals: ["KMnO₄", "Mohr's salt"],
+    formula: "MnO<sub>4</sub><sup>-</sup> + 5Fe<sup>2+</sup> + 8H<sup>+</sup> → Mn<sup>2+</sup> + 5Fe<sup>3+</sup> + 4H<sub>2</sub>O",
+    logic: "Redox titration with Fe²⁺ donor.",
+    result: "Observation: Pink color persists at endpoint; Fe²⁺ is oxidized to Fe³⁺."
+  },
+  "salt-analysis": {
+    title: "Salt Analysis",
+    equipment: ["Flame test", "Test tubes"],
+    chemicals: ["Salt sample", "Reagents"],
+    formula: "Varies by ion (Examples: Cl<sup>-</sup> + AgNO<sub>3</sub> → AgCl (white ppt); SO<sub>4</sub><sup>2-</sup> + BaCl<sub>2</sub> → BaSO<sub>4</sub> (s) + 2NaCl (aq))",
+    logic: "Identify cation and anion stepwise.",
+    result: "Observation: Color changes, precipitate formation, or flame color help identify ions."
+  },
+  "functional-group-tests": {
+    title: "Functional Group Tests",
+    equipment: ["Test tubes", "Dropper", "Water bath"],
+    chemicals: ["Alcohol", "Aldehyde", "Ketone", "Phenol", "Glucose"],
+    formula: "Varies by test (Examples: Aldehyde + Tollen's → Silver mirror; Phenol + FeCl<sub>3</sub> → Violet color)",
+    logic: "Color changes or precipitate formation confirm the presence of specific functional groups.",
+    result: "Observation: Color change or precipitate confirms the presence of a functional group (e.g., Silver mirror for aldehyde)."
+  },
+  "acetanilide-prep": {
+    title: "Acetanilide Preparation",
+    equipment: ["Beaker", "Filter"],
+    chemicals: ["Aniline", "Acetic anhydride"],
+    formula: "C<sub>6</sub>H<sub>5</sub>NH<sub>2</sub> + (CH<sub>3</sub>CO)<sub>2</sub>O → C<sub>6</sub>H<sub>5</sub>NHCOCH<sub>3</sub> + CH<sub>3</sub>COOH",
+    logic: "Prepare and recrystallize acetanilide.",
+    result: "Observation: White crystals of acetanilide form after recrystallization."
+  },
+  "aspirin-synthesis": {
+    title: "Aspirin Synthesis",
+    equipment: ["Beaker", "Filter"],
+    chemicals: ["Salicylic acid", "Acetic anhydride"],
+    formula: "C<sub>7</sub>H<sub>6</sub>O<sub>3</sub> + (CH<sub>3</sub>CO)<sub>2</sub>O → C<sub>9</sub>H<sub>8</sub>O<sub>4</sub> (aspirin) + CH<sub>3</sub>COOH",
+    logic: "Esterification to prepare aspirin.",
+    result: "Observation: White crystals of aspirin form after purification."
+  },
+  "soap-prep": {
+    title: "Soap Preparation",
+    equipment: ["Beaker", "Burner"],
+    chemicals: ["Oil/fat", "NaOH"],
+    formula: "Fat + NaOH → Soap + Glycerol (Saponification)",
+    logic: "Saponification forms soap+glycerol.",
+    result: "Observation: Soap separates as solid; glycerol remains in solution."
+  },
+  "alcohol-sodium": {
+    title: "Alcohol + Sodium",
+    equipment: ["Test tube"],
+    chemicals: ["Alcohol", "Sodium"],
+    formula: "2R-OH + 2Na → 2R-ONa + H<sub>2</sub> (g)",
+    logic: "H₂ gas evolution with sodium in alcohol.",
+    result: "Observation: Effervescence due to H₂ gas; sodium dissolves."
+  },
+  "reaction-rate": {
+    title: "Reaction Rate Study",
+    equipment: ["Stop watch"],
+    chemicals: ["Na₂S₂O₃", "HCl"],
+    formula: "Na<sub>2</sub>S<sub>2</sub>O<sub>3</sub> (aq) + 2HCl → 2NaCl + SO<sub>2</sub> + S (s)↓ + H<sub>2</sub>O",
+    logic: "Measure time for turbidity under different conditions.",
+    result: "Observation: Time for appearance of turbidity (S precipitate) is measured."
+  },
+  "temp-effect": {
+    title: "Temp Effect on Rate",
+    equipment: ["Water bath"],
+    chemicals: ["Reactants"],
+    formula: "Na<sub>2</sub>S<sub>2</sub>O<sub>3</sub> (aq) + 2HCl (aq) → 2NaCl (aq) + SO<sub>2</sub> (g) + S (s)↓ + H<sub>2</sub>O (l)",
+    logic: "Record rate change with temperature variation.",
+    result: "Observation: As temperature increases, the time taken for the solution to turn cloudy (due to S precipitate) decreases, indicating a faster reaction rate."
+  },
+  "acetic-adsorption": {
+    title: "Acetic Acid Adsorption",
+    equipment: ["Beakers"],
+    chemicals: ["Acetic acid", "Charcoal"],
+    formula: "CH<sub>3</sub>COOH (aq) + Charcoal (s) → [Charcoal·CH<sub>3</sub>COOH] (adsorbed) (Physical process)",
+    logic: "Charcoal adsorbs acid; test residual.",
+    result: "Observation: Acetic acid concentration decreases in solution due to adsorption on charcoal."
+  },
+  "colloid-prep-12": {
+    title: "Colloid Preparation",
+    equipment: ["Stirring rod"],
+    chemicals: ["Starch/gum"],
+    formula: "Starch (s) + H<sub>2</sub>O → Starch sol (Colloid) (Physical dispersion)",
+    logic: "Form colloid by proper dispersion.",
+    result: "Observation: Stable colloidal solution forms; shows Tyndall effect (light scattering)."
+  },
+  "amino-chromatography": {
+    title: "Amino Acid Chromatography",
+    equipment: ["Filter paper"],
+    chemicals: ["Amino acids", "Solvent", "Ninhydrin"],
+    formula: "Amino acid + Ninhydrin → Purple/blue/violet spot (Ruhemann's purple)",
+    logic: "Identify amino acids via spot colors.",
+    result: "Observation: Colored spots appear after ninhydrin spray, indicating different amino acids."
+  },
+  "essential-oil-extraction": {
+    title: "Essential Oil Extraction",
+    equipment: ["Steam distillation setup"],
+    chemicals: ["Clove buds/water"],
+    formula: "Clove buds + H<sub>2</sub>O → Clove oil (distillate) + Water (Physical separation)",
+    logic: "Extract oil by steam distillation.",
+    result: "Observation: Two layers form in the receiver (oil and water); the oil is separated and has a characteristic aroma."
+  },
+  "carbohydrate-test": {
+    title: "Carbohydrate Test",
+    equipment: ["Test tubes"],
+    chemicals: ["Benedict's/Fehling’s reagent", "Sugar"],
+    formula: "Reducing sugar + Benedict's/Fehling’s → Cu<sub>2</sub>O (red ppt)",
+    logic: "Red precipitate indicates reducing sugar.",
+    result: "Observation: Brick-red precipitate confirms reducing sugar."
+  }
+};
+
+
+// Emoji/sticker mapping for chemicals and equipment
+const ITEM_EMOJIS = {
+  "Sodium": "🧂",
+  "Water": "💧",
+  "Phenolphthalein": "🟣",
+  "Beaker": "⚗️",
+  "Water trough": "🛁",
+  "Forceps": "✂️",
+  "Glass rod": "🔬",
+  // Add more mappings as needed
+};
+
+// Drag/drop + simulation logic:
+let draggedName = null;
+function addDragHandlers(el) {
+  el.addEventListener('dragstart', e => {
+    draggedName = el.dataset.name;
+  });
+}
+function updateSimBtn() {
+  document.getElementById('simulate-btn').disabled =
+    document.getElementById('workspace-items').children.length < 2;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const expId = new URLSearchParams(location.search).get("experiment");
+  const exp = EXPERIMENT_DATA[expId];
+  if (!exp) {
+    document.getElementById("exp-title").textContent = "❌ Experiment Not Found";
+    return;
+  }
+
+  document.getElementById("exp-title").textContent = exp.title;
+  // Hide image if not available
+  if (exp.image) {
+    document.getElementById("exp-image").src = exp.image;
+    document.getElementById("exp-image").style.display = "";
+  } else {
+    document.getElementById("exp-image").style.display = "none";
+  }
+  document.getElementById("logic-text").textContent = exp.logic;
+
+  // Show experiment details
+  const detailsList = document.getElementById("exp-details-list");
+  // The 'formula' key is now included and will render correctly with <sub> tags
+  detailsList.innerHTML = `
+      <li><strong>Chemicals:</strong> ${exp.chemicals.join(", ")}</li>
+      <li><strong>Equipment:</strong> ${exp.equipment.join(", ")}</li>
+      <li><strong>Formula:</strong> ${exp.formula}</li>
+      <li><strong>Result:</strong><br /><pre style="white-space:pre-wrap;font-family:inherit;">${exp.result}</pre></li>
+  `;
+  document.getElementById("exp-details").style.display = "none"; // Hide details initially
+
+  exp.chemicals.forEach(name => {
+    const el = document.createElement('div');
+    el.className = 'item'; el.draggable = true; el.dataset.name = name;
+    el.innerHTML = `${ITEM_EMOJIS[name] || "🧪"} ${name}`;
+    document.getElementById('chemicals-list').appendChild(el);
+    addDragHandlers(el);
+  });
+  exp.equipment.forEach(name => {
+    const el = document.createElement('div');
+    el.className = 'item'; el.draggable = true; el.dataset.name = name;
+    el.innerHTML = `${ITEM_EMOJIS[name] || "🔧"} ${name}`;
+    document.getElementById('equipment-list').appendChild(el);
+    addDragHandlers(el);
+  });
+
+  const ws = document.getElementById('workspace');
+  const itemsDiv = document.getElementById('workspace-items');
+  ws.addEventListener('dragover', e => { e.preventDefault(); ws.classList.add('over'); });
+  ws.addEventListener('dragleave', () => ws.classList.remove('over'));
+  ws.addEventListener('drop', e => {
+    e.preventDefault(); ws.classList.remove('over');
+    if (draggedName && ![...itemsDiv.children].some(c=>c.dataset.name===draggedName)) {
+      const newEl=document.createElement('div');
+      newEl.className='item'; newEl.draggable=true; newEl.dataset.name=draggedName;
+      newEl.innerHTML = `${ITEM_EMOJIS[draggedName] || "🧪"} ${draggedName}`;
+      addDragHandlers(newEl); // <-- ADD THIS LINE
+      itemsDiv.appendChild(newEl);
+      updateSimBtn();
+    }
+    draggedName=null;
+  });
+
+  ['chemicals-list', 'equipment-list'].forEach(listId => {
+    const list = document.getElementById(listId);
+    list.addEventListener('dragover', e => e.preventDefault());
+    list.addEventListener('drop', e => {
+      e.preventDefault();
+      if (
+        draggedName &&
+        [...itemsDiv.children].some(c => c.dataset.name === draggedName)
+        && ![...list.children].some(c => c.dataset.name === draggedName)
+      ) {
+        // Remove from workspace
+        const wsItem = [...itemsDiv.children].find(c => c.dataset.name === draggedName);
+        if (wsItem) wsItem.remove();
+        // Add back to source list
+        const newEl = document.createElement('div');
+        newEl.className = 'item'; newEl.draggable = true; newEl.dataset.name = draggedName;
+        newEl.innerHTML = `${ITEM_EMOJIS[draggedName] || (listId === 'chemicals-list' ? "🧪" : "🔧")} ${draggedName}`;
+        list.appendChild(newEl);
+        addDragHandlers(newEl);
+        updateSimBtn();
+      }
+      draggedName = null;
+    });
+  });
+
+document.getElementById('simulate-btn').addEventListener('click', async () => {
+    const reactants = [...itemsDiv.children].map(c => c.dataset.name);
+
+    // Special handling for pH experiment
+    if (expId === "ph-substances") {
+        let output = "";
+        const indicatorPresent = reactants.includes("Universal indicator strips");
+        const chemicalsPresent = reactants.filter(r => exp.chemicals.includes(r));
+        if (indicatorPresent && chemicalsPresent.length > 0) {
+            chemicalsPresent.forEach(r => {
+                // Assuming a detailed result structure for pH, or just using the general result for now
+                output += `${r} + Universal indicator strips results in a pH change.\n`; 
+            });
+        } else {
+            output = "Please add both a substance and Universal indicator strips to see the pH result.";
+        }
+        document.getElementById('result').textContent = output.trim();
+        
+        // Update details list with current formula and result
+        detailsList.innerHTML = `
+            <li><strong>Chemicals:</strong> ${exp.chemicals.join(", ")}</li>
+            <li><strong>Equipment:</strong> ${exp.equipment.join(", ")}</li>
+            <li><strong>Formula:</strong> ${exp.formula}</li>
+            <li><strong>Result:</strong><br><pre style="white-space:pre-wrap;font-family:inherit;">${output.trim() || exp.result}</pre></li>
+        `;
+
+        document.getElementById("exp-details").style.display = "";
+        document.getElementById('submit-result-section').style.display = 'block'; // Show submission area
+        return;
+    }
+
+    // Default simulation behavior (for other experiments)
+    document.getElementById('result').textContent = "Simulating reaction... Please wait.";
+
+    // --- Backend API Call Simulation (Placeholder for actual server call) ---
+    // Here you would typically call your Flask API:
+    // const response = await fetch(`${API_BASE}/simulate?exp=${expId}&reactants=${reactants.join(',')}`);
+    // const data = await response.json();
+    // document.getElementById('result').textContent = data.observation;
+    // --- End API Call Simulation ---
+    
+    // Using the hardcoded result for now:
+    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
+    document.getElementById('result').textContent = exp.result;
+    
+    // Always show the full details after simulation
+    detailsList.innerHTML = `
+        <li><strong>Chemicals:</strong> ${exp.chemicals.join(", ")}</li>
+        <li><strong>Equipment:</strong> ${exp.equipment.join(", ")}</li>
+        <li><strong>Formula:</strong> ${exp.formula}</li>
+        <li><strong>Result:</strong><br><pre style="white-space:pre-wrap;font-family:inherit;">${exp.result}</pre></li>
+    `;
+    document.getElementById("exp-details").style.display = "";
+    document.getElementById('submit-result-section').style.display = 'block'; // Show submission area
+});
+
+
+document.getElementById('submit-observation-btn').addEventListener('click', () => {
+    const observation = document.getElementById('student-observation').value.trim();
+    const statusDiv = document.getElementById('submit-status');
+    
+    if (observation.length < 10) {
+        statusDiv.textContent = "❌ Please write a more detailed observation (min 10 characters).";
+        statusDiv.style.color = 'red';
+        return;
+    }
+    
+    // --- Submission to Backend API Simulation ---
+    // Here you would typically send the data to the backend:
+    // fetch(`${API_BASE}/submit-observation`, { method: 'POST', body: JSON.stringify({ expId, observation }), headers: { 'Content-Type': 'application/json' }})
+    // .then(response => response.json())
+    // .then(data => {
+    //     statusDiv.textContent = data.success ? '✅ Observation submitted successfully!' : '⚠️ Submission failed.';
+    //     statusDiv.style.color = data.success ? 'lightgreen' : 'yellow';
+    // });
+    // --- End API Submission Simulation ---
+    
+    // Simulated success message for now:
+    statusDiv.textContent = `✅ Observation submitted successfully! (Submitted: "${observation.substring(0, 50)}...")`;
+    statusDiv.style.color = 'lightgreen';
+});
+
+updateSimBtn();
+
+});
+</script>
+</body>
+</html>

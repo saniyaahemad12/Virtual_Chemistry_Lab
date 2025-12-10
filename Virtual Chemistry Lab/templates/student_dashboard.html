@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Student Dashboard - Virtual Chemistry Lab</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@400;500&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+
+    <style>
+        /* Base styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to right, #e3f2fd, #ffffff);
+            color: #0d47a1;
+        }
+
+        header {
+            background: linear-gradient(to right, #1e3c72, #2a5298);
+            padding: 25px 20px;
+            text-align: center;
+            color: white;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            position: relative;
+        }
+
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .labman-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            /* Placeholder Image for Labman Logo */
+            background-image: url('https://placehold.co/60x60/1e3c72/ffffff?text=CHEM');
+            background-size: cover;
+            background-position: center;
+        }
+
+        header h1 {
+            font-size: 2.4em;
+            margin-bottom: 10px;
+            font-family: 'Playfair Display', serif;
+        }
+
+        nav {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: #ffffff;
+            padding: 8px 16px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            transition: all 0.3s ease-in-out;
+            font-weight: 500;
+        }
+
+        nav a:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* The main container for the dashboard content */
+        .dashboard-container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px #b3c6e0;
+            padding: 32px;
+            transition: opacity 0.3s ease; /* For hiding/showing */
+        }
+
+        h2 {
+            color: #0d47a1;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .section {
+            margin-bottom: 32px;
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 22px 18px 18px 18px;
+            box-shadow: 0 2px 10px #e3eaf3;
+            transition: opacity 0.3s ease; /* For hiding/showing */
+        }
+        
+        /* New: Announcement Section Styling */
+        #section-announcements {
+            max-width: 900px;
+            margin: 40px auto;
+            display: none; /* Initially hidden */
+        }
+
+        #section-announcements h3 {
+            color: #1e3c72;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #bbdefb;
+        }
+        
+        #announcement-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        #announcement-list li {
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-left: 5px solid #ff9800; /* Attention color */
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        #announcement-list li strong {
+            display: block;
+            color: #0d47a1;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+
+        #announcement-list li small {
+            color: #757575;
+            display: block;
+            margin-top: 5px;
+            font-size: 0.85em;
+        }
+        
+        .section h3 {
+            color: #1976d2;
+            margin-bottom: 16px;
+            font-size: 1.25em;
+            letter-spacing: 0.5px;
+            text-align: left;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+            background: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            font-size: 0.95em;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            border: 1px solid #e0e0e0;
+            padding: 12px 10px;
+            text-align: left;
+        }
+
+        th {
+            background: #bbdefb;
+            color: #0d47a1;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        tr:nth-child(even) {
+            background: #f5f5f5;
+        }
+        tr:hover {
+            background-color: #e0f2f7;
+        }
+
+        /* Submission Input & Buttons */
+        .submission-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #b3c6e0;
+            border-radius: 4px;
+            font-size: 0.9em;
+            box-sizing: border-box;
+        }
+        .submission-input:focus {
+            border-color: #1976d2;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+        }
+
+        .submit-exp-btn, .mark-quiz-done-btn {
+            background: #43a047; /* Green */
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.2s ease, transform 0.1s ease;
+            font-weight: 500;
+            margin-top: 5px;
+            width: 100%; /* Make buttons full width in their cell */
+        }
+
+        .submit-exp-btn:hover, .mark-quiz-done-btn:hover {
+            background: #2e7031;
+            transform: translateY(-1px);
+        }
+        
+        td a {
+            color: #1976d2;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        td a:hover {
+            text-decoration: underline;
+        }
+
+        /* Status & Feedback Styling */
+        .status-submitted {
+            color: #388e3c;
+            font-weight: 500;
+        }
+        .status-pending {
+            color: #ff9800;
+            font-weight: 500;
+        }
+        .feedback-evaluated {
+            color: #1976d2;
+            font-weight: 600;
+        }
+        .feedback-na {
+            color: #9e9e9e;
+        }
+
+        /* Lottie Animation Positioning */
+        .lottie-animation-container {
+            position: absolute; 
+            top: 20px; 
+            right: 20px; 
+            width: 120px; 
+            height: 120px; 
+            z-index: 10;
+        }
+
+
+        /* Responsive adjustments */
+        @media (max-width: 700px) {
+            header h1 { font-size: 1.8em; }
+            .labman-logo { width: 45px; height: 45px; }
+            nav { flex-direction: column; gap: 8px; }
+            nav a { padding: 6px 12px; font-size: 0.9em; }
+            .dashboard-container, #section-announcements { padding: 20px; margin: 20px auto; }
+            h2 { font-size: 1.8em; margin-bottom: 20px; }
+            .section { padding: 18px; }
+            th, td { font-size: 0.8em; padding: 8px 6px; }
+            .submission-input { font-size: 0.8em; padding: 6px; }
+            .submit-exp-btn, .mark-quiz-done-btn { font-size: 0.75em; padding: 6px 10px; }
+            /* Lottie adjustment for mobile */
+            .lottie-animation-container {
+                width: 80px;
+                height: 80px;
+                top: 10px;
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-container">
+      <img src="../assets/labman.png" alt="Labman" class="labman-logo"> 
+      <h1>Virtual Chemistry Lab</h1>
+    </div>
+        <nav>
+            <!-- Updated nav links to use data-view for toggling -->
+             <a href="index.html" >Home</a>
+            <a href="#" data-view="dashboard">Dashboard</a>
+            <a href="experiments.html">Experiments</a>
+            <a href="#" data-view="announcements" id="nav-announcements">Announcements</a>
+            <a href="safety.html">Lab Safety</a>
+            <a href="theory.html">Theory</a>
+        </nav>
+    </header>
+
+    <div class="lottie-animation-container">
+        <!-- Replaced local asset with a general public animation link -->
+        <lottie-player
+            src="https://lottie.host/80c6c59b-2e9b-44a6-9764-1e0f63b49987/j67XW0w81D.json"
+            background="transparent"
+            speed="1"
+            loop
+            autoplay>
+        </lottie-player>
+    </div>
+
+    <!-- ANNOUNCEMENTS SECTION - Initially Hidden -->
+    <div class="section" id="section-announcements">
+        <h2>📢 Latest Announcements</h2>
+        <div class="announcement-list">
+            <h3>Important Updates:</h3>
+            <ul id="announcement-list-items">
+                <!-- Announcements will be dynamically loaded here -->
+            </ul>
+        </div>
+    </div>
+    
+    <!-- STUDENT DASHBOARD SECTION - Initially Visible -->
+    <div class="dashboard-container" id="section-dashboard">
+        <h2>🧑‍🎓 Student Dashboard</h2>
+        <div style="color:#1976d2;font-weight:bold;margin-bottom:20px; text-align: center;">Logged in as: <span id="student-email-display"></span></div>
+
+        <div class="section">
+            <h3>Your Assigned Experiments/Quizzes</h3>
+            <table id="student-assigned-table">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Title/Name</th>
+                        <th>Instructions/Link</th>
+                        <th>Your Submission</th>
+                        <th>Action</th>
+                        <th>Teacher Feedback</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="6" style="text-align: center; color: #616161;">No assignments loaded. Please ensure you are logged in.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // --- Dummy Data (Simulated Database/Teacher Input) ---
+        const DUMMY_ANNOUNCEMENTS = [
+            { id: 'a1', title: 'Midterm Lab Exam Schedule', content: 'The Midterm Practical Exam is scheduled for next Monday. Review Lab Safety procedures.', date: '2025-11-20' },
+            { id: 'a2', title: 'New Experiment Posted', content: 'The new "Titration of a Strong Acid" experiment is now assigned. Submission due in two weeks.', date: '2025-11-15' },
+            { id: 'a3', title: 'Office Hours Change', content: 'Office hours this week are moved to Wednesday, 2 PM.', date: '2025-11-10' }
+        ];
+
+        // Function to initialize assignments if they don't exist
+        function initializeAssignments() {
+            if (!localStorage.getItem('assignments')) {
+                // Dummy assignments for student@example.com
+                const initialAssignments = [
+                    { id: 'exp1', student_email: 'student@example.com', type: 'experiment', name: 'Synthesis of Aspirin', instructions: 'Complete the steps in the lab notebook. Report due next week.', submission: null, result: null },
+                    { id: 'quiz2', student_email: 'student@example.com', type: 'quiz', title: 'Electrochemistry Quiz', link: 'https://forms.gle/abcdef12345', submission: null, result: null },
+                    { id: 'exp3', student_email: 'other@example.com', type: 'experiment', name: 'Solubility Test', instructions: 'Perform and report.', submission: null, result: null },
+                    { id: 'exp4', student_email: 'student@example.com', type: 'experiment', name: 'Gas Laws Simulation', instructions: 'Record observations from the simulation.', submission: null, result: 'Grade A-' }
+                ];
+                localStorage.setItem('assignments', JSON.stringify(initialAssignments));
+            }
+        }
+        
+        // --- User/Auth Setup (Using localStorage for demo) ---
+        let studentEmail = localStorage.getItem('student_email');
+        if (!studentEmail) {
+            let promptedEmail = prompt("Please enter your student email to view your dashboard (e.g., student@example.com):");
+            if (promptedEmail) {
+                studentEmail = promptedEmail.trim().toLowerCase();
+                if (studentEmail) {
+                    localStorage.setItem('student_email', studentEmail);
+                }
+            }
+            if (!studentEmail) {
+                console.warn("No student email provided. Dashboard functionality will be limited.");
+            }
+        }
+        document.getElementById('student-email-display').textContent = studentEmail || 'N/A (Not logged in)';
+        
+        // --- Core Utility Functions ---
+        function getAssignments() {
+            return JSON.parse(localStorage.getItem('assignments') || '[]');
+        }
+
+        function setAssignments(assignments) {
+            localStorage.setItem('assignments', JSON.stringify(assignments));
+        }
+
+        // --- View Toggling Functionality ---
+        const dashboardView = document.getElementById('section-dashboard');
+        const announcementView = document.getElementById('section-announcements');
+
+        async function loadStudentAssignments() {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        document.querySelector('#student-assigned-table tbody').innerHTML = '<tr><td colspan="6" style="text-align: center; color: #d32f2f;">Please log in to view assignments.</td></tr>';
+        return;
+    }
+
+    try {
+        const response = await fetch('/student_assignments', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch assignments');
+        }
+
+        const assignments = await response.json();
+        const tbody = document.querySelector('#student-assigned-table tbody');
+        tbody.innerHTML = '';
+
+        if (assignments.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #616161;">No assignments assigned to you yet.</td></tr>';
+            return;
+        }
+
+        assignments.forEach(a => {
+            const title = a.title || 'Untitled';
+            const info = a.description || 'No description provided';
+            const submission = a.submission || 'Not submitted';
+            const feedback = a.feedback || 'Not evaluated';
+
+            tbody.innerHTML += `<tr>
+                <td>${a.type}</td>
+                <td>${title}</td>
+                <td>${info}</td>
+                <td>${submission}</td>
+                <td><button class="submit-exp-btn" data-id="${a.id}">Submit</button></td>
+                <td>${feedback}</td>
+            </tr>`;
+        });
+    } catch (error) {
+        console.error('Error loading assignments:', error);
+        document.querySelector('#student-assigned-table tbody').innerHTML = '<tr><td colspan="6" style="text-align: center; color: #d32f2f;">Failed to load assignments.</td></tr>';
+    }
+}
+        function toggleView(view) {
+            if (view === 'announcements') {
+                dashboardView.style.display = 'none';
+                announcementView.style.display = 'block';
+                loadAnnouncements(); // Load data only when the view is active
+            } else { // Default to dashboard
+                dashboardView.style.display = 'block';
+                announcementView.style.display = 'none';
+                loadStudentAssignments(); // Reload assignments when returning
+            }
+        }
+        
+        // --- Announcement Loading ---
+        function loadAnnouncements() {
+            const list = document.getElementById('announcement-list-items');
+            list.innerHTML = ''; // Clear old announcements
+
+            if (DUMMY_ANNOUNCEMENTS.length === 0) {
+                list.innerHTML = '<li style="border-left: 5px solid #1976d2;">No new announcements at this time. Check back soon!</li>';
+                return;
+            }
+
+            DUMMY_ANNOUNCEMENTS.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            DUMMY_ANNOUNCEMENTS.forEach(ann => {
+                const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+                const formattedDate = new Date(ann.date).toLocaleDateString('en-US', dateOptions);
+
+                list.innerHTML += `
+                    <li>
+                        <strong>${ann.title}</strong>
+                        <p>${ann.content}</p>
+                        <small>Posted on: ${formattedDate}</small>
+                    </li>
+                `;
+            });
+        }
+
+
+        // --- Assignment Loading and Rendering ---
+ 
+
+        // --- Event Listener for Student Actions ---
+        document.querySelector('#student-assigned-table tbody').addEventListener('click', function(e) {
+            const target = e.target;
+            const id = target.getAttribute('data-id');
+
+            if (!id || !studentEmail) return;
+
+            if (target.classList.contains('submit-exp-btn')) { 
+                e.stopPropagation();
+                const input = document.querySelector(`.submission-input[data-id="${id}"]`);
+                if (!input || !input.files || input.files.length === 0) {
+                    // Use a custom message box instead of alert
+                    alert("Please select a file to attach as your experiment summary."); 
+                    return;
+                }
+
+                const file = input.files[0];
+                const reader = new FileReader();
+
+                reader.onload = function(event) {
+                    let submissionContent;
+                    if (file.type === 'application/pdf') {
+                        submissionContent = event.target.result; 
+                    } else {
+                        // For non-PDF, store a URL or descriptive string
+                        submissionContent = `FILE_ATTACHED: ${file.name} (${file.type})`;
+                    }
+                    updateAssignmentSubmission(id, submissionContent);
+                };
+
+                reader.onerror = function() {
+                    console.error("FileReader error:", reader.error);
+                    alert("Error reading file.");
+                };
+                
+                // Read PDF as Data URL (Base64) to allow for a direct preview link
+                if(file.type === 'application/pdf') {
+                    reader.readAsDataURL(file);
+                } else {
+                    // Read as text or use descriptive string for other types
+                    updateAssignmentSubmission(id, `FILE_ATTACHED: ${file.name} (${file.type})`);
+                }
+
+
+            } else if (target.classList.contains('mark-quiz-done-btn')) { 
+                e.stopPropagation();
+                const input = document.querySelector(`.submission-input[data-id="${id}"]`);
+                let quizResponseLink = '';
+
+                if (input && input.value.trim()) {
+                    quizResponseLink = input.value.trim();
+                    try {
+                        new URL(quizResponseLink);
+                    } catch (e) {
+                        alert("Please enter a valid URL for your Google Form responses, or leave it blank to mark as done without a link.");
+                        return;
+                    }
+                }
+
+                const submissionContent = quizResponseLink !== '' ? quizResponseLink : 'Quiz Completed';
+                updateAssignmentSubmission(id, submissionContent);
+            }
+        });
+
+        function updateAssignmentSubmission(assignmentId, submissionContent) {
+            const assignments = getAssignments();
+            const idx = assignments.findIndex(a => a.id === assignmentId);
+            if (idx !== -1) {
+                assignments[idx].submission = submissionContent;
+                assignments[idx].submitted_at = new Date().toISOString();
+                setAssignments(assignments);
+                loadStudentAssignments();
+                alert('Submission recorded successfully!');
+            }
+        }
+        
+        // --- Navigation Event Listener ---
+        document.querySelector('nav').addEventListener('click', (e) => {
+            const target = e.target;
+            const view = target.getAttribute('data-view');
+            if (view) {
+                e.preventDefault(); // Stop default link behavior
+                toggleView(view);
+            }
+        });
+          
+
+        
+        // --- Initial Setup ---
+        document.addEventListener('DOMContentLoaded', async () => {
+  const token = localStorage.getItem('token'); // Retrieve the JWT token from localStorage
+  const loggedInSection = document.querySelector('.logged-in-section'); // Update this selector based on your HTML structure
+
+  if (!token) {
+    loggedInSection.innerHTML = 'Not logged in. Please log in.';
+    return;
+  }
+
+  try {
+    // Decode the token to get user details
+    const user = parseJwt(token);
+    console.log('Decoded user:', user); // Debugging
+
+    if (user.role !== 'student') {
+      loggedInSection.innerHTML = 'Unauthorized access. Please log in as a student.';
+      return;
+    }
+
+    // Fetch student details from the backend
+    const response = await fetch('http://localhost:5000/student_details', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      loggedInSection.innerHTML = `Logged in as: ${data.name} (${data.email})`;
+    } else {
+      loggedInSection.innerHTML = 'Error loading student details. Please log in again.';
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    loggedInSection.innerHTML = 'An error occurred. Please log in again.';
+  }
+});
+
+// Helper function to decode JWT
+function parseJwt(token) {
+  const base64Url = token.split('.')[1];
+  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  return JSON.parse(atob(base64));
+}
+    </script>
+</body>
+</html>
