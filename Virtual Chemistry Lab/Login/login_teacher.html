@@ -94,7 +94,7 @@
       const password = document.getElementById("password").value;
 
       try {
-       const response = await fetch('http://localhost:5000/login_teacher', {
+       const response = await fetch('/login_teacher', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ email, password }),
@@ -116,3 +116,4 @@
 
 </body>
 </html>
+
