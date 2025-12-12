@@ -241,7 +241,7 @@ def serve_static(filename):
         return send_from_directory(FRONTEND_DIR, filename)
     abort(404)
 
-
+ 
 # --- API: Reactions & Simulation ---
 @app.route("/reactions", methods=["GET"])
 def get_reactions():
@@ -535,3 +535,8 @@ if __name__ == '__main__':
         db.create_all()  # Create tables if they don't exist
         print("Database tables created!")  # Debugging
     app.run(debug=True)
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
