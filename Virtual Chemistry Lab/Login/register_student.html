@@ -81,7 +81,7 @@ document.querySelector('#register-form').addEventListener('submit', async functi
 
   try {
     // Send registration data to the backend
-    const response = await fetch('http://localhost:5000/register_student', {
+    const response = await fetch('/register_student', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -107,4 +107,5 @@ document.querySelector('#register-form').addEventListener('submit', async functi
 });
 </script>
 </body>
+
 </html>
