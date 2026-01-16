@@ -1,1 +1,22 @@
-[]
+[
+    {
+        "id": "f4ac85d2-2492-4f08-8aa8-e33c0b66bea2",
+        "teacher_email": "teacher@example.com",
+        "student_email": "student1@example.com",
+        "assignment_type": "experiment",
+        "title": "Acid-Base Titration",
+        "instructions": "Complete the experiment and submit your observations.",
+        "result": null,
+        "evaluation": null
+    },
+    {
+        "id": "1e24e0b7-a517-4a16-b442-ff007301fe5a",
+        "teacher_email": "teacher@example.com",
+        "student_email": "student2@example.com",
+        "assignment_type": "experiment",
+        "title": "Acid-Base Titration",
+        "instructions": "Complete the experiment and submit your observations.",
+        "result": null,
+        "evaluation": null
+    }
+]

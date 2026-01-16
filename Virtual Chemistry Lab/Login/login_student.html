@@ -103,7 +103,7 @@
         const data = await response.json();
 
         if (response.ok) {
-          localStorage.setItem('token', response.token); // Save the token
+          localStorage.setItem('access_token', response.token); // Save the token with the correct key
           localStorage.setItem('student_email', email); // Save the student email
           window.location.href = "../templates/student_dashboard.html"; // Ensure direct redirection
         } else {

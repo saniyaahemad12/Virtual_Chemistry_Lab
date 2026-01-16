@@ -421,17 +421,17 @@
 
         assignments.forEach(a => {
             const title = a.title || 'Untitled';
-            const info = a.description || 'No description provided';
+            const instructions = a.instructions || 'No instructions provided';
             const submission = a.submission || 'Not submitted';
-            const feedback = a.feedback || 'Not evaluated';
+            const result = a.result || 'Not evaluated';
 
             tbody.innerHTML += `<tr>
-                <td>${a.type}</td>
+                <td>${a.assignment_type}</td>
                 <td>${title}</td>
-                <td>${info}</td>
+                <td>${instructions}</td>
                 <td>${submission}</td>
                 <td><button class="submit-exp-btn" data-id="${a.id}">Submit</button></td>
-                <td>${feedback}</td>
+                <td>${result}</td>
             </tr>`;
         });
     } catch (error) {

@@ -34,7 +34,9 @@ from flask_jwt_extended import (
 from werkzeug.security import generate_password_hash, check_password_hash
 from email.mime.text import MIMEText
 import smtplib
- # Replace 'your_secret_key' with a strong, unique key
+import logging
+
+# Replace 'your_secret_key' with a strong, unique key
 
 # Optional import from your simulation module
 try:
@@ -85,17 +87,15 @@ class Student(db.Model):
     password = db.Column(db.String(255), nullable=False)
 
 
-   
+# Define the User model
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, nullable=False)
+    email = db.Column(db.String, unique=True, nullable=False)
+    is_teacher = db.Column(db.Boolean, default=False)
 
-# Only create assignment table if it doesn't exist (other tables already exist)
-
-import json
-import os
-import uuid
-from flask import Flask, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
-
-# ...existing imports and configurations...
+# Create the users table if it doesn't exist
+db.create_all()
 
 # --- Updated /assign_experiment endpoint ---
 @app.route("/assign_experiment", methods=["POST"])
@@ -113,45 +113,33 @@ def assign_experiment():
     if not teacher_email or not student_emails or not assignment_type or not title:
         return jsonify({"error": "teacher_email, student_emails, assignment_type, and title are required"}), 400
 
+    created_assignments = []
+    for student_email in student_emails:
+        if not student_email.strip():
+            continue
+
+        new_assignment = Assignment(
+            id=str(uuid.uuid4()),
+            teacher_email=teacher_email,
+            student_email=student_email.strip(),
+            assignment_type=assignment_type,
+            title=title,
+            instructions=instructions,
+            result=None,
+            evaluation=None
+        )
+        db.session.add(new_assignment)
+        created_assignments.append(new_assignment.id)
+
     try:
-        # Load existing assignments from JSON file
-        assignments_file = os.path.join(BASE_DIR, "assignments.json")
-        try:
-            with open(assignments_file, "r") as file:
-                assignments = json.load(file)
-        except FileNotFoundError:
-            assignments = []
-
-        # Create new assignments
-        created_assignments = []
-        for student_email in student_emails:
-            if not student_email.strip():
-                continue
-
-            new_assignment = {
-                "id": str(uuid.uuid4()),
-                "teacher_email": teacher_email,
-                "student_email": student_email.strip(),
-                "assignment_type": assignment_type,
-                "title": title,
-                "instructions": instructions,
-                "result": None,
-                "evaluation": None,
-            }
-            assignments.append(new_assignment)
-            created_assignments.append(new_assignment["id"])
-
-        # Save updated assignments back to JSON file
-        with open(assignments_file, "w") as file:
-            json.dump(assignments, file, indent=4)
-
+        db.session.commit()
         return jsonify({
             "success": True,
             "created_assignments": created_assignments,
             "message": f"Assigned to {len(created_assignments)} students",
         }), 201
-
     except Exception as e:
+        db.session.rollback()
         return jsonify({"error": f"Error saving assignments: {str(e)}"}), 500
 
 
@@ -160,6 +148,9 @@ def assign_experiment():
 @jwt_required()
 def student_assignments():
     student_email = get_jwt_identity()
+
+    # Debugging: Log the extracted student email
+    logging.debug(f"Extracted student_email: {student_email}")
 
     try:
         # Load assignments from JSON file
@@ -434,20 +425,30 @@ def assign_task():
     if not student_ids or not task:
         return jsonify({"error": "Missing student_ids or task"}), 400
 
+    created_assignments = []
     for student_id in student_ids:
         student = User.query.get(student_id)
         if student:
-            assignment = Assignment(
+            new_assignment = Assignment(
                 id=str(uuid.uuid4()),
                 teacher_email=data.get('teacher_email'),
                 student_email=student.email,
-                experiment=task,
-                result=None
+                assignment_type="task",
+                title=task,
+                instructions="Complete the task as instructed.",
+                result=None,
+                evaluation=None
             )
-            db.session.add(assignment)
+            db.session.add(new_assignment)
+            created_assignments.append(new_assignment.id)
 
-    db.session.commit()
-    return jsonify({"success": True, "message": "Task assigned successfully"})
+    try:
+        db.session.commit()
+        return jsonify({"success": True, "message": "Task assigned successfully", "created_assignments": created_assignments})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to save assignments: {str(e)}"}), 500
+
 # --- Contact form endpoint ---
 
 
@@ -540,3 +541,19 @@ if __name__ == '__main__':
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
+# Route to serve the student dashboard
+@app.route('/student_dashboard')
+def serve_student_dashboard():
+    dashboard_path = os.path.join(FRONTEND_DIR, "templates", "student_dashboard.html")
+    if os.path.exists(dashboard_path):
+        return send_from_directory(os.path.dirname(dashboard_path), os.path.basename(dashboard_path))
+    return jsonify({"error": "Student dashboard not found"}), 404
+
+# Route to serve the teacher dashboard
+@app.route('/teacher_dashboard')
+def serve_teacher_dashboard():
+    dashboard_path = os.path.join(FRONTEND_DIR, "templates", "teacher_dashboard.html")
+    if os.path.exists(dashboard_path):
+        return send_from_directory(os.path.dirname(dashboard_path), os.path.basename(dashboard_path))
+    return jsonify({"error": "Teacher dashboard not found"}), 404
