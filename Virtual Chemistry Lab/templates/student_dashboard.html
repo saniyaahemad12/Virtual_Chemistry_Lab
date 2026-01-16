@@ -370,22 +370,13 @@
             }
         }
         
-        // --- User/Auth Setup (Using localStorage for demo) ---
+        // --- User/Auth Setup ---
         let studentEmail = localStorage.getItem('student_email');
         if (!studentEmail) {
-            let promptedEmail = prompt("Please enter your student email to view your dashboard (e.g., student@example.com):");
-            if (promptedEmail) {
-                studentEmail = promptedEmail.trim().toLowerCase();
-                if (studentEmail) {
-                    localStorage.setItem('student_email', studentEmail);
-                }
-            }
-            if (!studentEmail) {
-                console.warn("No student email provided. Dashboard functionality will be limited.");
-            }
+            console.warn("Student email not found. Defaulting to 'Not logged in'.");
         }
-        document.getElementById('student-email-display').textContent = studentEmail || 'N/A (Not logged in)';
-        
+        document.getElementById('student-email-display').textContent = studentEmail || 'Not logged in';
+
         // --- Core Utility Functions ---
         function getAssignments() {
             return JSON.parse(localStorage.getItem('assignments') || '[]');

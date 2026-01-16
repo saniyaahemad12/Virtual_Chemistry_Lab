@@ -104,7 +104,8 @@
 
         if (response.ok) {
           localStorage.setItem('token', response.token); // Save the token
-          window.location.href = "../templates/student_dashboard.html"; 
+          localStorage.setItem('student_email', email); // Save the student email
+          window.location.href = "../templates/student_dashboard.html"; // Ensure direct redirection
         } else {
           document.getElementById("error-msg").textContent = data.error;
         }
