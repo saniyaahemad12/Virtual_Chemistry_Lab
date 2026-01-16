@@ -86,6 +86,19 @@ class Student(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
 
+@app.route('/create-assignment', methods=['POST'])
+def create_assignment():
+    new_assignments = request.json
+
+    with open('assignments.json', 'r') as f:
+        data = json.load(f)
+
+    data.extend(new_assignments)
+
+    with open('assignments.json', 'w') as f:
+        json.dump(data, f, indent=4)
+
+    return jsonify({"message": "Assignments created successfully"})
 
 # Define the User model
 class User(db.Model):
@@ -95,7 +108,6 @@ class User(db.Model):
     is_teacher = db.Column(db.Boolean, default=False)
 
 # Create the users table if it doesn't exist
-db.create_all()
 
 # --- Updated /assign_experiment endpoint ---
 @app.route("/assign_experiment", methods=["POST"])
@@ -149,23 +161,17 @@ def assign_experiment():
 def student_assignments():
     student_email = get_jwt_identity()
 
-    # Debugging: Log the extracted student email
-    logging.debug(f"Extracted student_email: {student_email}")
+    # Fetch assignments from the database
+    assignments = Assignment.query.filter_by(student_email=student_email).all()
 
-    try:
-        # Load assignments from JSON file
-        assignments_file = os.path.join(BASE_DIR, "assignments.json")
-        with open(assignments_file, "r") as file:
-            assignments = json.load(file)
-    except FileNotFoundError:
-        assignments = []
-
-    # Filter assignments for the current student
-    student_data = [
-        a for a in assignments if a.get('student_email') == student_email
-    ]
-
-    return jsonify(student_data), 200
+    # Return assignments as JSON
+    return jsonify([{
+        "id": a.id,
+        "title": a.title,
+        "instructions": a.instructions,
+        "result": a.result,
+        "evaluation": a.evaluation
+    } for a in assignments]), 200
 
 # --- Remove the Assignment model ---
 # Delete the `Assignment` class and any related database operations.
@@ -538,10 +544,6 @@ if __name__ == '__main__':
     app.run(debug=True)
 
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
-
 # Route to serve the student dashboard
 @app.route('/student_dashboard')
 def serve_student_dashboard():
@@ -557,3 +559,70 @@ def serve_teacher_dashboard():
     if os.path.exists(dashboard_path):
         return send_from_directory(os.path.dirname(dashboard_path), os.path.basename(dashboard_path))
     return jsonify({"error": "Teacher dashboard not found"}), 404
+
+# Endpoint for students to fetch their assignments
+@app.route('/student_assignments', methods=['GET'])
+@jwt_required()
+def student_assignments():
+    student_email = get_jwt_identity()
+    assignments = Assignment.query.filter_by(student_email=student_email).all()
+    return jsonify([{
+        "id": a.id,
+        "title": a.title,
+        "instructions": a.instructions,
+        "result": a.result,
+        "evaluation": a.evaluation
+    } for a in assignments]), 200
+
+# Endpoint for students to submit their tasks
+@app.route('/submit_task', methods=['POST'])
+@jwt_required()
+def submit_task():
+    data = request.get_json()
+    task_id = data.get('task_id')
+    submission = data.get('submission')
+
+    if not task_id or not submission:
+        return jsonify({"error": "Missing task_id or submission"}), 400
+
+    assignment = Assignment.query.get(task_id)
+    if not assignment:
+        return jsonify({"error": "Assignment not found"}), 404
+
+    assignment.result = submission
+    db.session.commit()
+    return jsonify({"success": True, "message": "Task submitted successfully"}), 200
+
+# Endpoint for teachers to fetch their assignments
+@app.route('/teacher_assignments', methods=['GET'])
+@jwt_required()
+def teacher_assignments():
+    teacher_email = get_jwt_identity()
+    assignments = Assignment.query.filter_by(teacher_email=teacher_email).all()
+    return jsonify([{
+        "id": a.id,
+        "student_email": a.student_email,
+        "title": a.title,
+        "instructions": a.instructions,
+        "result": a.result,
+        "evaluation": a.evaluation
+    } for a in assignments]), 200
+
+# Endpoint for teachers to evaluate student submissions
+@app.route('/evaluate_task', methods=['POST'])
+@jwt_required()
+def evaluate_task():
+    data = request.get_json()
+    task_id = data.get('task_id')
+    evaluation = data.get('evaluation')
+
+    if not task_id or not evaluation:
+        return jsonify({"error": "Missing task_id or evaluation"}), 400
+
+    assignment = Assignment.query.get(task_id)
+    if not assignment:
+        return jsonify({"error": "Assignment not found"}), 404
+
+    assignment.evaluation = evaluation
+    db.session.commit()
+    return jsonify({"success": True, "message": "Task evaluated successfully"}), 200

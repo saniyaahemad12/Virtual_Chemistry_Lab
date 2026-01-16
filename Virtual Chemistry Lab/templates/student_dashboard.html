@@ -545,17 +545,29 @@
             }
         });
 
-        function updateAssignmentSubmission(assignmentId, submissionContent) {
-            const assignments = getAssignments();
-            const idx = assignments.findIndex(a => a.id === assignmentId);
-            if (idx !== -1) {
-                assignments[idx].submission = submissionContent;
-                assignments[idx].submitted_at = new Date().toISOString();
-                setAssignments(assignments);
-                loadStudentAssignments();
-                alert('Submission recorded successfully!');
-            }
-        }
+       async function updateAssignmentSubmission(id, submissionContent) {
+    const token = localStorage.getItem('access_token');
+
+    const response = await fetch('/submit_assignment', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+            assignment_id: id,
+            submission: submissionContent
+        })
+    });
+
+    if (response.ok) {
+        alert('Submission recorded successfully!');
+        loadStudentAssignments();
+    } else {
+        alert('Submission failed');
+    }
+}
+
         
         // --- Navigation Event Listener ---
         document.querySelector('nav').addEventListener('click', (e) => {
