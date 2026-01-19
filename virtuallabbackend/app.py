@@ -35,6 +35,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from email.mime.text import MIMEText
 import smtplib
 import logging
+from models import db, Assignment
 
 # Replace 'your_secret_key' with a strong, unique key
 
@@ -61,13 +62,13 @@ CORS(app)
 
 # Database
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(BASE_DIR, 'virtual_lab.db??check_same_thread=False')}"
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:Saniya%40123@localhost/virtual_chemistry_lab'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Optional: token expiry
 app.config['JWT_SECRET_KEY'] = 'e5b8c3f4a1d2e6f7b9c8d4a3e7f6b5c4d3a2e1f8c7b6a5d4e3f2b1c8d7a6f5e4'  # Replace 'your_secret_key' with a strong, unique key
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=7)
 
-db = SQLAlchemy(app)
+db.init_app(app)
 jwt = JWTManager(app)
 
 # --- Models ---
@@ -87,24 +88,38 @@ class Student(db.Model):
     password = db.Column(db.String(255), nullable=False)
 
 @app.route('/create-assignment', methods=['POST'])
+@jwt_required()
 def create_assignment():
-    new_assignments = request.json
+    teacher_id = get_jwt_identity()
+    assignments = request.get_json()
 
-    with open('assignments.json', 'r') as f:
-        data = json.load(f)
+    if not isinstance(assignments, list):
+        return jsonify({'error': 'Expected a list of assignments'}), 400
 
-    data.extend(new_assignments)
+    created = []
+    for a in assignments:
+        if not all(k in a for k in ('student_email', 'assignment_type', 'title', 'instructions')):
+            return jsonify({'error': 'Missing required field in assignment'}), 400
 
-    with open('assignments.json', 'w') as f:
-        json.dump(data, f, indent=4)
+        new_assignment = Assignment(
+            teacher_id=teacher_id,
+            student_email=a['student_email'],
+            assignment_type=a['assignment_type'],
+            title=a['title'],
+            instructions=a['instructions']
+        )
+        db.session.add(new_assignment)
+        created.append(a)
 
-    return jsonify({"message": "Assignments created successfully"})
+    db.session.commit()
+    return jsonify({'success': True, 'created': created}), 201
+
 
 # Define the User model
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String, nullable=False)
-    email = db.Column(db.String, unique=True, nullable=False)
+    name = db.Column(db.String(100), nullable=False)  # Added length for VARCHAR
+    email = db.Column(db.String(120), unique=True, nullable=False)
     is_teacher = db.Column(db.Boolean, default=False)
 
 # Create the users table if it doesn't exist
@@ -156,22 +171,15 @@ def assign_experiment():
 
 
 # --- Updated /student_assignments endpoint ---
-@app.route('/student_assignments', methods=['POST'])
-@jwt_required()
-def student_assignments():
-    student_email = get_jwt_identity()
+@app.route('/student_assignments/<string:email>', methods=['GET'])
+def student_assignments(email):
+    assignments = Assignment.query.filter_by(student_email=email).all()
+    result = [{
+        'title': a.title,
+        'result': a.result
+    } for a in assignments]
+    return jsonify(result)
 
-    # Fetch assignments from the database
-    assignments = Assignment.query.filter_by(student_email=student_email).all()
-
-    # Return assignments as JSON
-    return jsonify([{
-        "id": a.id,
-        "title": a.title,
-        "instructions": a.instructions,
-        "result": a.result,
-        "evaluation": a.evaluation
-    } for a in assignments]), 200
 
 # --- Remove the Assignment model ---
 # Delete the `Assignment` class and any related database operations.
@@ -372,9 +380,13 @@ def register_student():
         email=data['email'],
         password=hashed_password
     )
-    db.session.add(new_student)
-    db.session.commit()
-    return jsonify({'message': 'Student registered successfully!'}), 201
+    try:
+        db.session.add(new_student)
+        db.session.commit()
+        return jsonify({'message': 'Student registered successfully!'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'An error occurred: {str(e)}'}), 500
 
 
 @app.route('/login_teacher', methods=['POST'])
@@ -536,6 +548,28 @@ def internal_error(e):
     return jsonify({"error": "Internal Server Error"}), 500
 
 
+# --- Store the token in the database for tracking purposes ---
+@app.route('/store_token', methods=['POST'])
+@jwt_required()
+def store_token():
+    data = request.get_json()
+    token = data.get('token')
+    teacher_email = get_jwt_identity()
+
+    if not token:
+        return jsonify({'error': 'Token is missing'}), 400
+
+    # Store the token in the database
+    new_token = Token(teacher_email=teacher_email, token=token)
+    db.session.add(new_token)
+    try:
+        db.session.commit()
+        return jsonify({'message': 'Token stored successfully'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Failed to store token: {str(e)}'}), 500
+
+
 # --- Bootstrap DB & run ---
 if __name__ == '__main__':
     with app.app_context():
@@ -561,9 +595,9 @@ def serve_teacher_dashboard():
     return jsonify({"error": "Teacher dashboard not found"}), 404
 
 # Endpoint for students to fetch their assignments
-@app.route('/student_assignments', methods=['GET'])
+@app.route('/get_student_assignments', methods=['GET'])
 @jwt_required()
-def student_assignments():
+def get_student_assignments():
     student_email = get_jwt_identity()
     assignments = Assignment.query.filter_by(student_email=student_email).all()
     return jsonify([{
@@ -594,19 +628,25 @@ def submit_task():
     return jsonify({"success": True, "message": "Task submitted successfully"}), 200
 
 # Endpoint for teachers to fetch their assignments
+from flask_jwt_extended import jwt_required, get_jwt_identity
+
 @app.route('/teacher_assignments', methods=['GET'])
 @jwt_required()
 def teacher_assignments():
-    teacher_email = get_jwt_identity()
-    assignments = Assignment.query.filter_by(teacher_email=teacher_email).all()
-    return jsonify([{
-        "id": a.id,
-        "student_email": a.student_email,
-        "title": a.title,
-        "instructions": a.instructions,
-        "result": a.result,
-        "evaluation": a.evaluation
-    } for a in assignments]), 200
+    teacher_id = get_jwt_identity()  # gets logged-in teacher's ID from token
+    assignments = Assignment.query.filter_by(teacher_id=teacher_id).all()
+    
+    result = []
+    for a in assignments:
+        result.append({
+            'student_email': a.student_email,
+            'assignment_type': a.assignment_type,
+            'title': a.title,
+            'instructions': a.instructions,
+            'result': a.result
+        })
+    return jsonify(result)
+
 
 # Endpoint for teachers to evaluate student submissions
 @app.route('/evaluate_task', methods=['POST'])

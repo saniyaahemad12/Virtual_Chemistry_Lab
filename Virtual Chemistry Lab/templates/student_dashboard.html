@@ -292,7 +292,7 @@
     </div>
         <nav>
             <!-- Updated nav links to use data-view for toggling -->
-             <a href="index.html" >Home</a>
+            <a href="index.html" >Home</a>
             <a href="#" data-view="dashboard">Dashboard</a>
             <a href="experiments.html">Experiments</a>
             <a href="#" data-view="announcements" id="nav-announcements">Announcements</a>
@@ -355,272 +355,205 @@
             { id: 'a2', title: 'New Experiment Posted', content: 'The new "Titration of a Strong Acid" experiment is now assigned. Submission due in two weeks.', date: '2025-11-15' },
             { id: 'a3', title: 'Office Hours Change', content: 'Office hours this week are moved to Wednesday, 2 PM.', date: '2025-11-10' }
         ];
+        
 
         // Function to initialize assignments if they don't exist
-        function initializeAssignments() {
-            if (!localStorage.getItem('assignments')) {
-                // Dummy assignments for student@example.com
-                const initialAssignments = [
-                    { id: 'exp1', student_email: 'student@example.com', type: 'experiment', name: 'Synthesis of Aspirin', instructions: 'Complete the steps in the lab notebook. Report due next week.', submission: null, result: null },
-                    { id: 'quiz2', student_email: 'student@example.com', type: 'quiz', title: 'Electrochemistry Quiz', link: 'https://forms.gle/abcdef12345', submission: null, result: null },
-                    { id: 'exp3', student_email: 'other@example.com', type: 'experiment', name: 'Solubility Test', instructions: 'Perform and report.', submission: null, result: null },
-                    { id: 'exp4', student_email: 'student@example.com', type: 'experiment', name: 'Gas Laws Simulation', instructions: 'Record observations from the simulation.', submission: null, result: 'Grade A-' }
-                ];
-                localStorage.setItem('assignments', JSON.stringify(initialAssignments));
-            }
-        }
-        
-        // --- User/Auth Setup ---
-        let studentEmail = localStorage.getItem('student_email');
-        if (!studentEmail) {
-            console.warn("Student email not found. Defaulting to 'Not logged in'.");
-        }
-        document.getElementById('student-email-display').textContent = studentEmail || 'Not logged in';
+      
+/* =========================================================
+   AUTH + USER INFO
+========================================================= */
 
-        // --- Core Utility Functions ---
-        function getAssignments() {
-            return JSON.parse(localStorage.getItem('assignments') || '[]');
-        }
+const token = localStorage.getItem('access_token');
+const emailDisplay = document.getElementById('student-email-display');
 
-        function setAssignments(assignments) {
-            localStorage.setItem('assignments', JSON.stringify(assignments));
-        }
+function parseJwt(token) {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(base64));
+}
 
-        // --- View Toggling Functionality ---
-        const dashboardView = document.getElementById('section-dashboard');
-        const announcementView = document.getElementById('section-announcements');
+let studentEmail = null;
 
-        async function loadStudentAssignments() {
-    const token = localStorage.getItem('access_token');
+if (!token) {
+    emailDisplay.textContent = 'Not logged in';
+} else {
+    const user = parseJwt(token);
+    studentEmail = user.sub; // JWT identity
+    emailDisplay.textContent = studentEmail;
+}
+
+/* =========================================================
+   LOAD STUDENT ASSIGNMENTS (FROM MYSQL)
+========================================================= */
+
+async function loadStudentAssignments() {
+    const tbody = document.querySelector('#student-assigned-table tbody');
+
     if (!token) {
-        document.querySelector('#student-assigned-table tbody').innerHTML = '<tr><td colspan="6" style="text-align: center; color: #d32f2f;">Please log in to view assignments.</td></tr>';
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align:center;color:#d32f2f">
+                    Please log in to view assignments
+                </td>
+            </tr>`;
         return;
     }
 
     try {
         const response = await fetch('/student_assignments', {
-            method: 'POST',
+            method: 'GET',
             headers: {
-                'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             }
         });
 
         if (!response.ok) {
-            throw new Error('Failed to fetch assignments');
+            throw new Error(response.status);
         }
 
         const assignments = await response.json();
-        const tbody = document.querySelector('#student-assigned-table tbody');
         tbody.innerHTML = '';
 
         if (assignments.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #616161;">No assignments assigned to you yet.</td></tr>';
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align:center;color:#616161">
+                        No assignments assigned yet
+                    </td>
+                </tr>`;
             return;
         }
 
         assignments.forEach(a => {
-            const title = a.title || 'Untitled';
-            const instructions = a.instructions || 'No instructions provided';
-            const submission = a.submission || 'Not submitted';
-            const result = a.result || 'Not evaluated';
-
-            tbody.innerHTML += `<tr>
-                <td>${a.assignment_type}</td>
-                <td>${title}</td>
-                <td>${instructions}</td>
-                <td>${submission}</td>
-                <td><button class="submit-exp-btn" data-id="${a.id}">Submit</button></td>
-                <td>${result}</td>
-            </tr>`;
+            tbody.innerHTML += `
+                <tr>
+                    <td>${a.assignment_type}</td>
+                    <td>${a.title}</td>
+                    <td>${a.instructions || '-'}</td>
+                    <td>${a.result || 'Pending'}</td>
+                    <td>
+                        <input type="file" class="submission-input" data-id="${a.id}">
+                        <button class="submit-btn" data-id="${a.id}">
+                            Submit
+                        </button>
+                    </td>
+                    <td>${a.evaluation || '-'}</td>
+                </tr>
+            `;
         });
+
     } catch (error) {
         console.error('Error loading assignments:', error);
-        document.querySelector('#student-assigned-table tbody').innerHTML = '<tr><td colspan="6" style="text-align: center; color: #d32f2f;">Failed to load assignments.</td></tr>';
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align:center;color:#d32f2f">
+                    Failed to load assignments
+                </td>
+            </tr>`;
     }
 }
-        function toggleView(view) {
-            if (view === 'announcements') {
-                dashboardView.style.display = 'none';
-                announcementView.style.display = 'block';
-                loadAnnouncements(); // Load data only when the view is active
-            } else { // Default to dashboard
-                dashboardView.style.display = 'block';
-                announcementView.style.display = 'none';
-                loadStudentAssignments(); // Reload assignments when returning
-            }
-        }
-        
-        // --- Announcement Loading ---
-        function loadAnnouncements() {
-            const list = document.getElementById('announcement-list-items');
-            list.innerHTML = ''; // Clear old announcements
 
-            if (DUMMY_ANNOUNCEMENTS.length === 0) {
-                list.innerHTML = '<li style="border-left: 5px solid #1976d2;">No new announcements at this time. Check back soon!</li>';
-                return;
-            }
+/* =========================================================
+   SUBMIT ASSIGNMENT
+========================================================= */
 
-            DUMMY_ANNOUNCEMENTS.sort((a, b) => new Date(b.date) - new Date(a.date));
+document
+.querySelector('#student-assigned-table tbody')
+.addEventListener('click', function (e) {
 
-            DUMMY_ANNOUNCEMENTS.forEach(ann => {
-                const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-                const formattedDate = new Date(ann.date).toLocaleDateString('en-US', dateOptions);
+    if (!e.target.classList.contains('submit-btn')) return;
 
-                list.innerHTML += `
-                    <li>
-                        <strong>${ann.title}</strong>
-                        <p>${ann.content}</p>
-                        <small>Posted on: ${formattedDate}</small>
-                    </li>
-                `;
-            });
-        }
+    const assignmentId = e.target.dataset.id;
+    const input = document.querySelector(
+        `.submission-input[data-id="${assignmentId}"]`
+    );
 
+    if (!input || !input.files.length) {
+        alert('Please select a file before submitting');
+        return;
+    }
 
-        // --- Assignment Loading and Rendering ---
- 
+    const file = input.files[0];
+    const reader = new FileReader();
 
-        // --- Event Listener for Student Actions ---
-        document.querySelector('#student-assigned-table tbody').addEventListener('click', function(e) {
-            const target = e.target;
-            const id = target.getAttribute('data-id');
+    reader.onload = async function (event) {
+        await submitAssignment(assignmentId, event.target.result);
+    };
 
-            if (!id || !studentEmail) return;
+    reader.readAsDataURL(file);
+});
 
-            if (target.classList.contains('submit-exp-btn')) { 
-                e.stopPropagation();
-                const input = document.querySelector(`.submission-input[data-id="${id}"]`);
-                if (!input || !input.files || input.files.length === 0) {
-                    // Use a custom message box instead of alert
-                    alert("Please select a file to attach as your experiment summary."); 
-                    return;
-                }
-
-                const file = input.files[0];
-                const reader = new FileReader();
-
-                reader.onload = function(event) {
-                    let submissionContent;
-                    if (file.type === 'application/pdf') {
-                        submissionContent = event.target.result; 
-                    } else {
-                        // For non-PDF, store a URL or descriptive string
-                        submissionContent = `FILE_ATTACHED: ${file.name} (${file.type})`;
-                    }
-                    updateAssignmentSubmission(id, submissionContent);
-                };
-
-                reader.onerror = function() {
-                    console.error("FileReader error:", reader.error);
-                    alert("Error reading file.");
-                };
-                
-                // Read PDF as Data URL (Base64) to allow for a direct preview link
-                if(file.type === 'application/pdf') {
-                    reader.readAsDataURL(file);
-                } else {
-                    // Read as text or use descriptive string for other types
-                    updateAssignmentSubmission(id, `FILE_ATTACHED: ${file.name} (${file.type})`);
-                }
-
-
-            } else if (target.classList.contains('mark-quiz-done-btn')) { 
-                e.stopPropagation();
-                const input = document.querySelector(`.submission-input[data-id="${id}"]`);
-                let quizResponseLink = '';
-
-                if (input && input.value.trim()) {
-                    quizResponseLink = input.value.trim();
-                    try {
-                        new URL(quizResponseLink);
-                    } catch (e) {
-                        alert("Please enter a valid URL for your Google Form responses, or leave it blank to mark as done without a link.");
-                        return;
-                    }
-                }
-
-                const submissionContent = quizResponseLink !== '' ? quizResponseLink : 'Quiz Completed';
-                updateAssignmentSubmission(id, submissionContent);
-            }
+async function submitAssignment(assignmentId, submissionContent) {
+    try {
+        const response = await fetch('/submit_assignment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                assignment_id: assignmentId,
+                submission: submissionContent
+            })
         });
 
-       async function updateAssignmentSubmission(id, submissionContent) {
-    const token = localStorage.getItem('access_token');
+        if (!response.ok) {
+            throw new Error(response.status);
+        }
 
-    const response = await fetch('/submit_assignment', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-            assignment_id: id,
-            submission: submissionContent
-        })
-    });
-
-    if (response.ok) {
-        alert('Submission recorded successfully!');
+        alert('Assignment submitted successfully!');
         loadStudentAssignments();
-    } else {
+
+    } catch (error) {
+        console.error('Submission error:', error);
         alert('Submission failed');
     }
 }
 
-        
-        // --- Navigation Event Listener ---
-        document.querySelector('nav').addEventListener('click', (e) => {
-            const target = e.target;
-            const view = target.getAttribute('data-view');
-            if (view) {
-                e.preventDefault(); // Stop default link behavior
-                toggleView(view);
-            }
-        });
-          
+/* =========================================================
+   ANNOUNCEMENTS (OPTIONAL)
+========================================================= */
 
-        
-        // --- Initial Setup ---
-        document.addEventListener('DOMContentLoaded', async () => {
-  const token = localStorage.getItem('token'); // Retrieve the JWT token from localStorage
-  const loggedInSection = document.querySelector('.logged-in-section'); // Update this selector based on your HTML structure
+function loadAnnouncements() {
+    const list = document.getElementById('announcement-list-items');
+    list.innerHTML = '<li>No announcements yet</li>';
+}
 
-  if (!token) {
-    loggedInSection.innerHTML = 'Not logged in. Please log in.';
-    return;
-  }
+/* =========================================================
+   NAVIGATION
+========================================================= */
 
-  try {
-    // Decode the token to get user details
-    const user = parseJwt(token);
-    console.log('Decoded user:', user); // Debugging
+const dashboardView = document.getElementById('section-dashboard');
+const announcementView = document.getElementById('section-announcements');
 
-    if (user.role !== 'student') {
-      loggedInSection.innerHTML = 'Unauthorized access. Please log in as a student.';
-      return;
-    }
-
-    // Fetch student details from the backend
-    const response = await fetch('http://localhost:5000/student_details', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      loggedInSection.innerHTML = `Logged in as: ${data.name} (${data.email})`;
+function toggleView(view) {
+    if (view === 'announcements') {
+        dashboardView.style.display = 'none';
+        announcementView.style.display = 'block';
+        loadAnnouncements();
     } else {
-      loggedInSection.innerHTML = 'Error loading student details. Please log in again.';
+        announcementView.style.display = 'none';
+        dashboardView.style.display = 'block';
+        loadStudentAssignments();
     }
-  } catch (error) {
-    console.error('Error:', error);
-    loggedInSection.innerHTML = 'An error occurred. Please log in again.';
-  }
+}
+
+document.querySelector('nav').addEventListener('click', e => {
+    const view = e.target.getAttribute('data-view');
+    if (view) {
+        e.preventDefault();
+        toggleView(view);
+    }
 });
+
+/* =========================================================
+   INIT
+========================================================= */
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadStudentAssignments();
+});
+
 
 // Helper function to decode JWT
 function parseJwt(token) {

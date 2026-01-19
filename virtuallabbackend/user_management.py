@@ -1,5 +1,7 @@
 import json
 import os
+import uuid
+from app import db, Assignment
 
 USERS_FILE = os.path.join(os.path.dirname(__file__), 'users.json')
 ASSIGNMENTS_FILE = os.path.join(os.path.dirname(__file__), 'assignments.json')
@@ -29,9 +31,29 @@ def get_user(email):
     return None
 
 def add_assignment(assignment):
-    assignments = load_json(ASSIGNMENTS_FILE)
-    assignments.append(assignment)
-    save_json(ASSIGNMENTS_FILE, assignments)
+    teacher_email = assignment.get("teacher_email")
+    student_email = assignment.get("student_email")
+    assignment_type = assignment.get("assignment_type")
+    title = assignment.get("title")
+    instructions = assignment.get("instructions")
+
+    if not teacher_email or not student_email or not assignment_type or not title:
+        raise ValueError("Missing required fields in assignment.")
+
+    new_assignment = Assignment(
+        id=str(uuid.uuid4()),
+        teacher_email=teacher_email,
+        student_email=student_email,
+        assignment_type=assignment_type,
+        title=title,
+        instructions=instructions
+    )
+    db.session.add(new_assignment)
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        raise Exception(f"Error saving assignment: {str(e)}")
 
 def get_assignments_for_student(student_email):
     assignments = load_json(ASSIGNMENTS_FILE)
