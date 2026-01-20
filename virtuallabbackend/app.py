@@ -656,3 +656,75 @@ def evaluate_task():
     assignment.evaluation = evaluation
     db.session.commit()
     return jsonify({"success": True, "message": "Task evaluated successfully"}), 200
+
+
+from flask_mail import Mail, Message
+from itsdangerous import URLSafeTimedSerializer
+import sqlite3  # Or your DB
+
+
+
+# Email configuration (use your SMTP details)
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'your-email@gmail.com'
+app.config['MAIL_PASSWORD'] = 'your-email-password'
+
+mail = Mail(app)
+
+# Secret key for token generation
+s = URLSafeTimedSerializer('ThisIsASecret!')
+
+@app.route('/forgot_password', methods=['POST'])
+def forgot_password():
+    data = request.json
+    email = data.get('email')
+
+    # Check if teacher exists
+    conn = sqlite3.connect('yourdb.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM teachers WHERE email=?", (email,))
+    user = cursor.fetchone()
+    conn.close()
+
+    if not user:
+        return jsonify({"message":"Email not found!"}), 404
+
+    # Generate a token
+    token = s.dumps(email, salt='password-reset-salt')
+
+    # Create reset URL
+    reset_url = f"http://localhost:5000/reset_password/{token}"
+
+    # Send email
+    msg = Message(subject="Password Reset",
+                  sender="your-email@gmail.com",
+                  recipients=[email],
+                  body=f"Click the link to reset your password: {reset_url}")
+    mail.send(msg)
+
+    return jsonify({"message":"Password reset link sent to your email"})
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    try:
+        email = s.loads(token, salt='password-reset-salt', max_age=3600)  # 1 hour validity
+    except:
+        return "Invalid or expired token"
+
+    if request.method == 'POST':
+        new_password = request.form['password']
+        conn = sqlite3.connect('yourdb.db')
+        cursor = conn.cursor()
+        cursor.execute("UPDATE teachers SET password=? WHERE email=?", (new_password, email))
+        conn.commit()
+        conn.close()
+        return "Password updated! You can now <a href='/login_teacher.html'>login</a>."
+    
+    return f"""
+    <form method='POST'>
+        <input type='password' name='password' placeholder='New Password' required>
+        <button type='submit'>Reset Password</button>
+    </form>
+    """
