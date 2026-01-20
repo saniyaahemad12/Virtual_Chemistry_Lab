@@ -314,16 +314,6 @@ def experiments_for_class():
         return jsonify([])
     return jsonify(EXPERIMENTS_BY_CLASS.get(class_num, []))
 
-
-
-
-
-
-
-
-
-
-
 @app.route("/evaluate_assignment", methods=["POST"])
 def evaluate_assignment():
     data = request.get_json(silent=True)

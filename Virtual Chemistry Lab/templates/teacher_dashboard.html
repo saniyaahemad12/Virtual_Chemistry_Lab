@@ -3,563 +3,489 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Teacher Dashboard – Virtual Chemistry Lab</title>
-
+<title>Teacher Dashboard - Virtual Chemistry Lab</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.0/lottie.min.js"></script>
-
 <style>
-/* ================= GLOBAL ================= */
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: 'Inter', sans-serif;
-  background: linear-gradient(to right, #e3f2fd, #ffffff);
-  color: #0d47a1;
-}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(to right, #e3f2fd, #ffffff);
+    color: #0d47a1;
+  }
 
-/* ================= HEADER ================= */
-header {
-  background: linear-gradient(to right, #1e3c72, #2a5298);
-  padding: 25px 20px;
-  color: #fff;
-  text-align: center;
-}
+  header {
+    background: linear-gradient(to right, #1e3c72, #2a5298);
+    padding: 25px 20px;
+    text-align: center;
+    color: white;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  }
 
-.header-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 15px;
-}
+  .header-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+  }
 
-.labman-logo {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-}
+  .labman-logo {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 0 10px rgba(255,255,255,0.3);
+  }
 
-nav {
-  margin-top: 15px;
-}
+  header h1 {
+    font-size: 2.2em;
+  }
 
-nav a {
-  color: #fff;
-  text-decoration: none;
-  padding: 8px 16px;
-  margin: 0 5px;
-  border-radius: 6px;
-  background: rgba(255,255,255,0.15);
-  transition: 0.3s;
-}
+  nav {
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
 
-nav a.active,
-nav a:hover {
-  background: #1976d2;
-}
+  nav a {
+    text-decoration: none;
+    color: #ffffff;
+    padding: 8px 16px;
+    background-color: rgba(255,255,255,0.1);
+    border-radius: 6px;
+    font-weight: 500;
+    transition: 0.3s;
+  }
 
-/* ================= SECTIONS ================= */
-.section {
-  display: none;
-  padding: 40px 20px;
-}
+  nav a.active {
+    background: #1976d2;
+    color: #fff;
+  }
 
-.section.active {
-  display: block;
-}
+  nav a:hover {
+    background: #1565c0;
+    color: #fff;
+  }
 
-/* ================= CONTAINER ================= */
-.dashboard-container {
-  max-width: 1000px;
-  margin: auto;
-}
+  .dashboard-container {
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
 
-/* ================= FORMS ================= */
-label {
-  display: block;
-  margin-bottom: 6px;
-  font-weight: 500;
-}
+  .section {
+    display: none;
+    width: 100%;
+  }
 
-input, select, textarea {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 14px;
-  border-radius: 8px;
-  border: 1px solid #b3c6e0;
-}
+  .section.active {
+    display: block;
+  }
 
-.assign-btn {
-  background: #1976d2;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 20px;
-  cursor: pointer;
-  font-weight: 600;
-}
+  h3, h4 {
+    color: #0d47a1;
+    margin-bottom: 15px;
+  }
 
-.assign-btn.danger {
-  background: #d32f2f;
-}
+  /* Forms */
+  label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 5px;
+  }
 
-.status-msg {
-  margin-top: 10px;
-  font-weight: 600;
-}
+  input[type="text"], input[type="url"], textarea, select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #b3c6e0;
+    border-radius: 8px;
+    font-size: 1em;
+    background: #f7fbff;
+  }
 
-/* ================= TABLE ================= */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
+  input:focus, select:focus, textarea:focus {
+    border: 1.5px solid #1976d2;
+    box-shadow: 0 0 0 3px rgba(25,118,210,0.2);
+    outline: none;
+  }
 
-th, td {
-  border: 1px solid #ddd;
-  padding: 10px;
-}
+  button {
+    background: #1976d2;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.3s;
+  }
 
-th {
-  background: #bbdefb;
-}
+  button:hover {
+    background: #0d47a1;
+    transform: translateY(-2px);
+  }
 
-/* ================= MODALS ================= */
-.modal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-}
+  .status-msg { margin-top: 10px; font-weight: 500; text-align: center; }
 
-.modal-content {
-  background: #fff;
-  padding: 20px;
-  border-radius: 10px;
-  width: 90%;
-  max-width: 600px;
-}
+  /* Students Section */
+  .manage-students-container {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
 
-.manage-students-container {
-  margin-top: 20px;
-}
+  .registered-students, .add-student-form {
+    flex: 1;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    background: #f8f9fa;
+  }
 
-.registered-students {
-  margin-bottom: 20px;
-}
+  .registered-students ul {
+    list-style: none;
+    padding: 0;
+  }
 
-.clear-data {
-  text-align: right;
-}
+  .registered-students li {
+    background: #fff;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
 
-.close-btn {
-  background: none;
-  border: none;
-  color: #1976d2;
-  cursor: pointer;
-  font-size: 16px;
-  margin-bottom: 10px;
-}
+  .registered-students li button {
+    background: #1976d2;
+    font-size: 0.85em;
+  }
+
+  .clear-btn { background: #d32f2f; }
+
+  /* Assignments Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+
+  th, td {
+    border: 1px solid #e0e0e0;
+    padding: 10px;
+    text-align: left;
+  }
+
+  th {
+    background: #bbdefb;
+  }
+
+  tr:nth-child(even) { background: #f5f5f5; }
+  tr:hover { background: #e0f2f7; }
+
+  /* Announcements */
+  .announcement-form {
+    background: #e3f2fd;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+  }
+
+  .announcement-list ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .announcement-list li {
+    background: #f8f9fa;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .announcement-list li strong { font-size: 1.1em; }
+  .announcement-list li small { display: block; margin-top: 5px; color: #616161; }
+  .announcement-list li p { margin-top: 10px; color: #424242; }
 </style>
 </head>
-
 <body>
 
 <header>
   <div class="header-container">
-    <img src="../assets/labman.png" class="labman-logo">
+    <img src="../assets/labman.png" alt="Labman" class="labman-logo">
     <h1>Virtual Chemistry Lab</h1>
   </div>
   <nav>
-    <a href="index.html" class="active">Home</a>
-    <a href="#students">Manage Students</a>
-    <a href="#assign">Assign Tasks</a>
-    <a href="#evaluate">Evaluate</a>
+    <a href="index.html">Home</a>
+    <a href="#section-students">Manage Students</a>
+    <a href="#section-assign">Assign Tasks</a>
+    <a href="#section-evaluate">Evaluate Submissions</a>
+    <a href="#section-announcements">Announcements</a>
   </nav>
 </header>
 
 <div class="dashboard-container">
 
-<!-- HOME -->
-<div class="section active" id="home">
-  <h2>Welcome Teacher 👋</h2>
-  <p>Use the menu to manage students, assignments and evaluations.</p>
-</div>
-
-<!-- STUDENTS -->
-<div class="section" id="students">
-  <h2>Manage Students</h2>
-
-  <div class="manage-students-container" style="display: flex; gap: 20px;">
-    <!-- Registered Students List -->
-    <div class="registered-students" style="flex: 1; background: #f8f9fa; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
-      <h4 style="color: #0d47a1; margin-bottom: 15px;">Registered Students</h4>
-      <ul id="registered-students" style="list-style: none; padding: 0;">
-        <!-- Registered students will be dynamically loaded here -->
-      </ul>
-    </div>
-
-    <!-- Add Student Form -->
-    <div class="add-student-form" style="flex: 1; background: #e3f2fd; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
-      <h4 style="color: #0d47a1; margin-bottom: 15px;">Add Student</h4>
-      <form id="student-info-form">
-        <label style="display: block; font-weight: 500; margin-bottom: 8px; color: #0d47a1;">Student Name:
-          <input type="text" id="student-info-name" placeholder="e.g. John Doe" required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #b3c6e0; border-radius: 8px; font-size: 1em; background: #ffffff;" />
-        </label>
-        <label style="display: block; font-weight: 500; margin-bottom: 8px; color: #0d47a1;">Email id:
-          <input type="text" id="student-info-email" placeholder=" " required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #b3c6e0; border-radius: 8px; font-size: 1em; background: #ffffff;" />
-        </label>
-        <button type="submit" class="assign-btn" style="background: #1976d2; color: #ffffff; border: none; border-radius: 8px; padding: 10px 20px; font-size: 1em; cursor: pointer; font-weight: 600; transition: background 0.3s ease, transform 0.2s ease;">Add Student</button>
-      </form>
-      <div id="student-info-status" class="status-msg" style="margin-top: 15px; color: #388e3c; font-weight: 600; text-align: center;"></div>
-    </div>
-  </div>
-  <div class="clear-data" style="margin-top: 20px; text-align: center;">
-    <button onclick="clearStudents()" class="assign-btn" style="background: #d32f2f; color: #ffffff; border: none; border-radius: 8px; padding: 10px 20px; font-size: 1em; cursor: pointer; font-weight: 600; transition: background 0.3s ease;">Clear All Students</button>
+  <!-- Home -->
+  <div class="section active" id="section-home">
+    <h1>Welcome to the Teacher Dashboard</h1>
+    <p>Use the navigation menu to manage students, assign tasks, and evaluate submissions.</p>
   </div>
 
+  <!-- Students -->
+  <div class="section" id="section-students">
+    <h3>Manage Students</h3>
+    <div class="manage-students-container">
+      <div class="registered-students">
+        <h4>Registered Students</h4>
+        <ul id="registered-students"></ul>
+      </div>
+      <div class="add-student-form">
+        <h4>Add Student</h4>
+        <form id="student-info-form">
+          <label>Name:</label>
+          <input type="text" id="student-info-name" placeholder="John Doe" required>
+          <label>Email:</label>
+          <input type="text" id="student-info-email" placeholder="email@example.com" required>
+          <button type="submit">Add Student</button>
+        </form>
+        <div id="student-info-status" class="status-msg"></div>
+      </div>
+    </div>
+    <button onclick="clearStudents()" class="clear-btn">Clear All Students</button>
+  </div>
   <!-- Student Profile Modal -->
-  <div id="student-profile-modal" style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); justify-content: center; align-items: center;">
-    <div id="student-profile-content" style="background: #ffffff; border-radius: 12px; padding: 20px; max-width: 500px; width: 90%; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25); text-align: center;">
-      <button class="close-btn" onclick="closeStudentProfile()" style="background: #d32f2f; color: #ffffff; border: none; border-radius: 6px; padding: 8px 16px; font-size: 1em; cursor: pointer; margin-bottom: 20px;">Close</button>
-      <h3 id="student-profile-name" style="color: #0d47a1; margin-bottom: 20px;">Student Name</h3>
-      <p id="student-profile-email" style="font-size: 1.1em; color: #424242;">Student Email</p>
-      <h4 style="color: #0d47a1; margin-bottom: 15px;">Assignments</h4>
-      <table id="student-assignments-table" style="width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; border-radius: 10px; overflow: hidden; font-size: 0.95em; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);">
-        <thead>
-          <tr>
-            <th style="border: 1px solid #e0e0e0; padding: 12px 10px; text-align: left; background: #bbdefb; color: #0d47a1; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Assignment</th>
-            <th style="border: 1px solid #e0e0e0; padding: 12px 10px; text-align: left; background: #bbdefb; color: #0d47a1; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Status</th>
-            <th style="border: 1px solid #e0e0e0; padding: 12px 10px; text-align: left; background: #bbdefb; color: #0d47a1; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Score</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Assignments will be dynamically loaded here -->
-        </tbody>
-      </table>
-    </div>
+<div id="student-profile-modal" style="display: none;">
+  <div id="student-profile-content">
+    <button class="close-btn" onclick="closeStudentProfile()">Close</button>
+    <h3 id="student-profile-name"></h3>
+    <p id="student-profile-email"></p>
+    <h4>Assignments</h4>
+    <table id="student-assignments-table">
+      <thead>
+        <tr>
+          <th>Assignment</th>
+          <th>Status</th>
+          <th>Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Assignments will be dynamically loaded here -->
+      </tbody>
+    </table>
   </div>
 </div>
 
-<!-- ASSIGN -->
-<div class="section" id="assign">
-  <h2>Assign Task</h2>
+  <!-- Assign Tasks -->
+  <div class="section" id="section-assign">
+    <h3>Assign Quiz or Experiment</h3>
+    <form id="assign-form">
+      <label>Student Emails (comma separated)</label>
+      <input type="text" id="assign-student-emails" required>
+      <label>Assignment Type</label>
+      <select id="assignment-type">
+        <option value="experiment">Experiment</option>
+        <option value="quiz">Quiz</option>
+      </select>
+      <div id="experiment-fields">
+        <label>Experiment Name</label>
+        <input type="text" id="experiment-name">
+        <label>Instructions</label>
+        <input type="text" id="experiment-instructions">
+      </div>
+      <div id="quiz-fields" style="display:none;">
+        <label>Quiz Title</label>
+        <input type="text" id="quiz-title">
+        <label>Google Form Link</label>
+        <input type="url" id="quiz-link">
+      </div>
+      <button type="submit">Assign</button>
+    </form>
+    <div id="assign-status" class="status-msg"></div>
+  </div>
 
-  <form id="assign-form">
-    <label>Student Emails (comma separated)</label>
-    <input id="assign-emails" required>
+  <!-- Evaluate -->
+  <div class="section" id="section-evaluate">
+    <h3>Evaluate Assigned Quiz/Experiment</h3>
+    <table id="assigned-table">
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Type</th>
+          <th>Title</th>
+          <th>Instructions/Link</th>
+          <th>Submission</th>
+          <th>Evaluation</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <button onclick="clearAssignments()" class="clear-btn">Clear All Submissions</button>
+  </div>
 
-    <label>Type</label>
-    <select id="assign-type">
-      <option value="experiment">Experiment</option>
-      <option value="quiz">Quiz</option>
-    </select>
-
-    <label>Title</label>
-    <input id="assign-title" required>
-
-    <label>Instructions / Link</label>
-    <input id="assign-info" required>
-
-    <button class="assign-btn">Assign</button>
-  </form>
-
-  <div id="assign-status" class="status-msg"></div>
-</div>
-
-<!-- EVALUATE -->
-<div class="section" id="evaluate">
-  <h2>Evaluate Submissions</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Student</th>
-        <th>Type</th>
-        <th>Title</th>
-        <th>Info</th>
-        <th>Result</th>
-      </tr>
-    </thead>
-    <tbody id="assignment-table"></tbody>
-  </table>
-
-  <button class="assign-btn danger" onclick="clearAssignments()">Clear All</button>
-</div>
+  <!-- Announcements -->
+  <div class="section" id="section-announcements">
+    <h2>📢 Announcements</h2>
+    <form class="announcement-form" id="announcement-form">
+      <label>Title</label>
+      <input type="text" id="announcement-title" required>
+      <label>Content</label>
+      <textarea id="announcement-content" rows="4" required></textarea>
+      <button type="submit">Post Announcement</button>
+      <div id="announcement-status" class="status-msg"></div>
+    </form>
+    <div class="announcement-list">
+      <h3>Recent Announcements:</h3>
+      <ul id="announcement-list"></ul>
+    </div>
+  </div>
 
 </div>
 
 <script>
-/* ================= NAVIGATION ================= */
-document.addEventListener('DOMContentLoaded', () => {
-  const token = localStorage.getItem('token');
+// ---------------- Navigation ----------------
+const sections = document.querySelectorAll('.section');
+const navLinks = document.querySelectorAll('nav a');
 
-  // Identify elements to hide/show
-  const loginSection = document.getElementById('login-section');  // If you have a login div
-  const dashboardSection = document.querySelector('.dashboard-container');
-
-  if (token) {
-    // User is logged in
-    if (loginSection) loginSection.style.display = 'none';
-    if (dashboardSection) dashboardSection.style.display = 'block';
-
-    // Optional: preload dashboard data
-    loadTeacherAssignments();
-    loadStudents();
-  } else {
-    // Not logged in
-    if (loginSection) loginSection.style.display = 'block';
-    if (dashboardSection) dashboardSection.style.display = 'none';
-  }
-
-  // Existing navigation setup
-  document.querySelectorAll('nav a').forEach(link => {
+navLinks.forEach(link => {
+  const href = link.getAttribute('href');
+  if(href.startsWith('#')) {  // Only for internal section links
     link.addEventListener('click', e => {
-      if (!link.hash) return;
-      const section = document.querySelector(link.hash);
-      if (!section) return;
+      const targetId = href.replace('#','');
       e.preventDefault();
-
-      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-      document.querySelectorAll('nav a').forEach(n => n.classList.remove('active'));
-
-      section.classList.add('active');
+      sections.forEach(sec => sec.classList.remove('active'));
+      document.getElementById(targetId).classList.add('active');
+      navLinks.forEach(nav => nav.classList.remove('active'));
       link.classList.add('active');
     });
-  });
+  }
 });
 
 
-
-/* ================= STUDENTS ================= */
-
-// ADD STUDENT (DB)
-const studentForm = document.getElementById('student-info-form');
-if (studentForm) {
-  studentForm.onsubmit = async function (e) {
-    e.preventDefault();
-
-    const name = document.getElementById('student-info-name')?.value.trim();
-    const email = document.getElementById('student-info-email')?.value.trim();
-    const status = document.getElementById('student-info-status');
-
-    if (!name || !email) {
-      status.textContent = 'Fill all fields';
-      status.style.color = 'red';
-      return;
-    }
-
-    try {
-      const res = await fetch('/add_student', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email })
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      status.textContent = 'Student added successfully';
-      status.style.color = 'green';
-      studentForm.reset();
-      loadStudents();
-    } catch (err) {
-      status.textContent = err.message;
-      status.style.color = 'red';
-    }
-  };
-}
-
-
-// LOAD STUDENTS (DB)
-async function loadStudents() {
+// ---------------- Students ----------------
+function loadStudents() {
   const ul = document.getElementById('registered-students');
-  if (!ul) return;
+  const students = JSON.parse(localStorage.getItem('students')||'[]');
+  ul.innerHTML = students.length ? '' : '<li>No students registered</li>';
+  students.forEach(s => {
+    const li = document.createElement('li');
+    li.innerHTML = `${s.name} (${s.regno})`;
+    ul.appendChild(li);
+  });
+}
 
-  ul.innerHTML = '<li style="text-align:center;color:#777">Loading...</li>';
+document.getElementById('student-info-form').onsubmit = function(e){
+  e.preventDefault();
+  const name = document.getElementById('student-info-name').value.trim();
+  const regno = document.getElementById('student-info-email').value.trim();
+  if(!name || !regno) return;
+  const students = JSON.parse(localStorage.getItem('students')||'[]');
+  if(students.some(s=>s.regno===regno)) return alert('Student exists');
+  students.push({name, regno});
+  localStorage.setItem('students', JSON.stringify(students));
+  this.reset();
+  loadStudents();
+}
 
-  try {
-    const res = await fetch('/students');
-    const students = await res.json();
+function clearStudents() {
+  localStorage.removeItem('students');
+  loadStudents();
+}
 
-    ul.innerHTML = '';
+// ---------------- Assignments ----------------
+function loadAssignments(){
+  const tbody = document.querySelector('#assigned-table tbody');
+  const assignments = JSON.parse(localStorage.getItem('assignments')||'[]');
+  tbody.innerHTML = assignments.length ? '' : '<tr><td colspan="6">No assignments</td></tr>';
+  assignments.forEach(a=>{
+    const info = a.type==='experiment'?a.instructions:`<a href="${a.instructions}" target="_blank">Quiz Link</a>`;
+    tbody.innerHTML += `<tr>
+      <td>${a.student_regno}</td>
+      <td>${a.type}</td>
+      <td>${a.title}</td>
+      <td>${info}</td>
+      <td>${a.submission?'Submitted':'Pending'}</td>
+      <td>${a.result||`<button onclick="evaluate('${a.id}')">Evaluate</button>`}</td>
+    </tr>`;
+  });
+}
 
-    if (students.length === 0) {
-      ul.innerHTML = '<li style="text-align:center;color:#777">No students registered</li>';
-      return;
-    }
-
-    students.forEach(s => {
-      const li = document.createElement('li');
-      li.style = "background:#fff;padding:10px;margin-bottom:10px;border-radius:8px;display:flex;justify-content:space-between";
-
-      li.innerHTML = `
-        <span>${s.name} (${s.email})</span>
-        <button onclick="viewStudentProfile('${s.email}')">View</button>
-      `;
-
-      ul.appendChild(li);
-    });
-  } catch (err) {
-    ul.innerHTML = '<li style="color:red">Failed to load students</li>';
+function evaluate(id){
+  const assignments = JSON.parse(localStorage.getItem('assignments')||'[]');
+  const idx = assignments.findIndex(a=>a.id===id);
+  if(idx===-1) return;
+  const res = prompt('Enter evaluation');
+  if(res){
+    assignments[idx].result = res;
+    localStorage.setItem('assignments', JSON.stringify(assignments));
+    loadAssignments();
   }
 }
 
-
-// STUDENT PROFILE + ASSIGNMENTS (DB)
-async function viewStudentProfile(email) {
-  try {
-    const res = await fetch(`/student_assignments/${email}`);
-    const assignments = await res.json();
-
-    document.getElementById('student-profile-name').textContent = email;
-    document.getElementById('student-profile-modal').style.display = 'flex';
-
-    const tbody = document.querySelector('#student-assignments-table tbody');
-    if (!tbody) return;
-
-    tbody.innerHTML = '';
-
-    if (assignments.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="3" style="text-align:center">No assignments</td></tr>`;
-      return;
-    }
-
-    assignments.forEach(a => {
-      tbody.innerHTML += `
-        <tr>
-          <td>${a.title}</td>
-          <td>${a.result ? 'Submitted' : 'Pending'}</td>
-          <td>${a.result || 'N/A'}</td>
-        </tr>
-      `;
-    });
-  } catch (err) {
-    alert('Failed to load student profile');
-  }
+document.getElementById('assign-form').onsubmit=function(e){
+  e.preventDefault();
+  const emails = document.getElementById('assign-student-emails').value.split(',').map(e=>e.trim());
+  const type = document.getElementById('assignment-type').value;
+  const title = type==='experiment'?document.getElementById('experiment-name').value.trim():document.getElementById('quiz-title').value.trim();
+  const instructions = type==='experiment'?document.getElementById('experiment-instructions').value.trim():document.getElementById('quiz-link').value.trim();
+  if(!title) return alert('Assignment title required');
+  const assignments = JSON.parse(localStorage.getItem('assignments')||'[]');
+  emails.forEach(email=>assignments.push({id:Date.now()+Math.random(), student_regno:email,type,title,instructions,submission:false,result:null}));
+  localStorage.setItem('assignments', JSON.stringify(assignments));
+  this.reset();
+  loadAssignments();
 }
 
-function closeStudentProfile() {
-  document.getElementById('student-profile-modal').style.display = 'none';
+function clearAssignments(){
+  localStorage.removeItem('assignments');
+  loadAssignments();
 }
 
-
-/* ================= ASSIGNMENTS ================= */
-
-// CREATE ASSIGNMENT (DB)
-const assignForm = document.getElementById('assign-form');
-if (assignForm) {
-  assignForm.onsubmit = async (e) => {
-    e.preventDefault();
-
-    const emails = document.getElementById('assign-emails').value
-      .split(',')
-      .map(e => e.trim())
-      .filter(e => e.length > 0);
-
-    if (emails.length === 0) {
-      alert('Please enter at least one student email');
-      return;
-    }
-
-    const assignmentType = document.getElementById('assign-type').value;
-    const title = document.getElementById('assign-title').value;
-    const instructions = document.getElementById('assign-info').value;
-    const token = localStorage.getItem('token');
-if (!token) {
-  alert("You are not logged in");
-  return;
+// Toggle assignment fields
+document.getElementById('assignment-type').onchange = function(){
+  document.getElementById('experiment-fields').style.display = this.value==='experiment'?'block':'none';
+  document.getElementById('quiz-fields').style.display = this.value==='quiz'?'block':'none';
 }
 
-    // ✅ CREATE LIST OF ASSIGNMENTS (THIS IS THE KEY FIX)
-    const assignments = emails.map(email => ({
-     // or from token
-      student_email: email,
-      assignment_type: assignmentType,
-      title: title,
-      instructions: instructions
-    }));
-
-    try {
-      const res = await fetch('/create-assignment', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${localStorage.getItem('token')}`
-  },
-  body: JSON.stringify(assignments)
-});
- 
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      alert('Assignments created successfully');
-      assignForm.reset();
-      loadTeacherAssignments();
-
-    } catch (err) {
-      alert(err.message);
-    }
-  };
+// ---------------- Announcements ----------------
+function loadAnnouncements(){
+  const ul = document.getElementById('announcement-list');
+  const announcements = JSON.parse(localStorage.getItem('announcements')||'[]');
+  ul.innerHTML = announcements.length ? '' : '<li>No announcements yet</li>';
+  announcements.forEach(a=>{
+    const li = document.createElement('li');
+    li.innerHTML = `<strong>${a.title}</strong><small>${new Date(a.date).toLocaleString()}</small><p>${a.content}</p>`;
+    ul.appendChild(li);
+  });
 }
 
-
-// LOAD TEACHER ASSIGNMENTS (DB)
-async function loadTeacherAssignments() {
-  const tableBody = document.getElementById('assignment-table');
-  if (!tableBody) return;
-
-  try {
-    const res = await fetch('/teacher_assignments', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    });
-
-    const assignments = await res.json();
-    tableBody.innerHTML = '';
-
-    assignments.forEach(a => {
-      tableBody.innerHTML += `
-        <tr>
-          <td>${a.student_email}</td>
-          <td>${a.assignment_type}</td>
-          <td>${a.title}</td>
-          <td>${a.instructions}</td>
-          <td>${a.result || 'Pending'}</td>
-        </tr>
-      `;
-    });
-  } catch (err) {
-    tableBody.innerHTML = '<tr><td colspan="5">Failed to load</td></tr>';
-  }
+document.getElementById('announcement-form').onsubmit=function(e){
+  e.preventDefault();
+  const title = document.getElementById('announcement-title').value.trim();
+  const content = document.getElementById('announcement-content').value.trim();
+  if(!title || !content) return;
+  const announcements = JSON.parse(localStorage.getItem('announcements')||'[]');
+  announcements.push({title,content,date:Date.now()});
+  localStorage.setItem('announcements', JSON.stringify(announcements));
+  this.reset();
+  loadAnnouncements();
 }
 
-
-/* ================= LOGIN ================= */
-async function loginTeacher(email, password) {
-  try {
-    const res = await fetch('/login_teacher', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-
-    localStorage.setItem('token', data.token);
-    alert('Login successful');
-    loadTeacherAssignments();
-  } catch (err) {
-    alert(err.message);
-  }
-}
-
+// Initial load
+loadStudents();
+loadAssignments();
+loadAnnouncements();
 </script>
-
 </body>
 </html>

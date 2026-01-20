@@ -102,16 +102,15 @@
 
         const data = await response.json();
 
-       if (response.ok) {
-  // Store the token under the key "token"
-  localStorage.setItem("token", data.access_token); // or data.token depending on server response
-  // Redirect to teacher dashboard
-  window.location.href = "../templates/teacher_dashboard.html"; // adjust path if in same folder
-} else {
-  document.getElementById("error-msg").textContent = data.error;
-}
-      } catch (error) {
-        document.getElementById("error-msg").textContent = "An error occurred. Please try again.";
+        if (response.ok) {
+          localStorage.setItem('access_token', response.token); // Save the token with the correct key
+          localStorage.setItem('teacher_email', email); // Save the teacher email
+          window.location.href = "../templates/teacher_dashboard.html"; // Ensure direct redirection
+        } else {
+          document.getElementById("error-msg").textContent = data.error;
+        }
+      } catch (err) {
+        document.getElementById("error-msg").textContent = "Server not responding!";
       }
     });
   </script>

@@ -327,79 +327,53 @@ window.addEventListener('DOMContentLoaded', function() {
 });
 
 
+
 document.addEventListener('DOMContentLoaded', () => {
   const navbar = document.querySelector('nav');
-  if (!navbar) {
-    console.error('Navbar element not found.');
-    return;
-  }
-
   const token = localStorage.getItem('token');
 
-  function setDefaultNavbar() {
+  function parseJwt(token) {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      return JSON.parse(atob(base64));
+    } catch {
+      return null;
+    }
+  }
+
+  if (!token) {
     navbar.innerHTML = `
       <a href="index.html">Home</a>
       <a href="/Login/register_teacher.html">Register as Teacher</a>
       <a href="/Login/register_student.html">Register as Student</a>
       <div class="dropdown">
-        <a href="#" class="dropbtn">Login ▼</a>
+        <a href="#">Login ▼</a>
         <div class="dropdown-content">
           <a href="/Login/login_teacher.html">Login as Teacher</a>
           <a href="/Login/login_student.html">Login as Student</a>
         </div>
       </div>
     `;
-  }
-
-  function parseJwt(token) {
-    try {
-      const base64Url = token.split('.')[1];
-      if (!base64Url) throw new Error('Invalid token format');
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      // Add padding if required
-      const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, '=');
-      return JSON.parse(atob(padded));
-    } catch (e) {
-      console.error('parseJwt error', e);
-      return null;
-    }
-  }
-
-  if (!token) {
-    setDefaultNavbar();
     return;
   }
 
   const user = parseJwt(token);
   if (!user || !user.role) {
-    // invalid token or missing role -> clear and show default
     localStorage.removeItem('token');
-    setDefaultNavbar();
+    location.reload();
     return;
   }
 
-  if (user.role === 'teacher') {
-    navbar.innerHTML = `
-      <a href="index.html">Home</a>
-      <a href="teacher_dashboard.html">Dashboard</a>
-      <a href="#" id="logout">Logout</a>
-    `;
-  } else {
-    navbar.innerHTML = `
-      <a href="index.html">Home</a>
-      <a href="student_dashboard.html">Dashboard</a>
-      <a href="#" id="logout">Logout</a>
-    `;
-  }
+  navbar.innerHTML = `
+    <a href="index.html">Home</a>
+    <a href="${user.role === 'teacher' ? 'teacher_dashboard.html' : 'student_dashboard.html'}">Dashboard</a>
+    <a href="#" id="logout">Logout</a>
+  `;
 
-  const logoutBtn = document.getElementById('logout');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      localStorage.removeItem('token');
-      localStorage.removeItem('role');
-      window.location.href = 'index.html';
-    });
-  }
+  document.getElementById('logout').onclick = () => {
+    localStorage.removeItem('token');
+    location.reload();
+  };
 });
 
