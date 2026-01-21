@@ -374,118 +374,209 @@ navLinks.forEach(link => {
 
 
 // ---------------- Students ----------------
+// ---------------- Students ----------------
 function loadStudents() {
-  const ul = document.getElementById('registered-students');
-  const students = JSON.parse(localStorage.getItem('students')||'[]');
-  ul.innerHTML = students.length ? '' : '<li>No students registered</li>';
-  students.forEach(s => {
-    const li = document.createElement('li');
-    li.innerHTML = `${s.name} (${s.regno})`;
-    ul.appendChild(li);
-  });
-}
+  fetch("http://localhost:5000/get_students", {
+    headers: {
+      "Authorization": "Bearer " + localStorage.getItem("token")
+    }
+  })
+  .then(res => res.json())
+  .then(students => {
+    // Ensure students is an array
+    if (!Array.isArray(students)) students = [];
 
-document.getElementById('student-info-form').onsubmit = function(e){
-  e.preventDefault();
-  const name = document.getElementById('student-info-name').value.trim();
-  const regno = document.getElementById('student-info-email').value.trim();
-  if(!name || !regno) return;
-  const students = JSON.parse(localStorage.getItem('students')||'[]');
-  if(students.some(s=>s.regno===regno)) return alert('Student exists');
-  students.push({name, regno});
-  localStorage.setItem('students', JSON.stringify(students));
-  this.reset();
-  loadStudents();
-}
+    const ul = document.getElementById('registered-students');
+    ul.innerHTML = students.length ? '' : '<li>No students registered</li>';
 
-function clearStudents() {
-  localStorage.removeItem('students');
-  loadStudents();
+    students.forEach(s => {
+      const li = document.createElement('li');
+      li.innerHTML = `${s.name} (${s.email})`;
+      ul.appendChild(li);
+    });
+  })
+  .catch(err => console.error("Error loading students:", err));
 }
 
 // ---------------- Assignments ----------------
-function loadAssignments(){
-  const tbody = document.querySelector('#assigned-table tbody');
-  const assignments = JSON.parse(localStorage.getItem('assignments')||'[]');
-  tbody.innerHTML = assignments.length ? '' : '<tr><td colspan="6">No assignments</td></tr>';
-  assignments.forEach(a=>{
-    const info = a.type==='experiment'?a.instructions:`<a href="${a.instructions}" target="_blank">Quiz Link</a>`;
-    tbody.innerHTML += `<tr>
-      <td>${a.student_regno}</td>
-      <td>${a.type}</td>
-      <td>${a.title}</td>
-      <td>${info}</td>
-      <td>${a.submission?'Submitted':'Pending'}</td>
-      <td>${a.result||`<button onclick="evaluate('${a.id}')">Evaluate</button>`}</td>
-    </tr>`;
+function loadAssignmentsFromDB() {
+  fetch("http://localhost:5000/teacher_assignments", {
+    method: "GET", // Must be GET
+    headers: { 
+      "Authorization": "Bearer " + localStorage.getItem("token")
+    }
+  })
+  .then(res => {
+    if (!res.ok) {
+      console.error("Failed to load assignments:", res.status, res.statusText);
+      return [];
+    }
+    return res.json();
+  })
+  .then(assignments => {
+    if (!Array.isArray(assignments)) {
+      console.error("Assignments is not an array:", assignments);
+      document.querySelector('#assigned-table tbody').innerHTML =
+        '<tr><td colspan="6">Failed to load assignments</td></tr>';
+      return;
+    }
+
+    const tbody = document.querySelector('#assigned-table tbody');
+    tbody.innerHTML = assignments.length
+      ? ""
+      : '<tr><td colspan="6">No assignments</td></tr>';
+
+    assignments.forEach(a => {
+      const info = a.assignment_type === "experiment"
+        ? a.instructions
+        : `<a href="${a.instructions}" target="_blank">Quiz Link</a>`;
+      tbody.innerHTML += `
+        <tr>
+          <td>${a.student_email}</td>
+          <td>${a.assignment_type}</td>
+          <td>${a.title}</td>
+          <td>${info}</td>
+          <td>${a.result || "Pending"}</td>
+          <td>
+            ${a.result ? "Evaluated" : `<button onclick="evaluate('${a.id}')">Evaluate</button>`}
+          </td>
+        </tr>`;
+    });
+  })
+  .catch(err => console.error(err));
+}
+
+
+
+
+
+function evaluate(id) {
+  const res = prompt('Enter evaluation');
+  if (!res) return;
+  fetch("http://localhost:5000/evaluate_task", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify({ task_id: id, evaluation: res })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      alert("Evaluation saved ✅");
+      loadAssignmentsFromDB();
+    } else {
+      alert("Error: " + data.error);
+    }
+  })
+  .catch(err => {
+    console.error("Error evaluating assignment:", err);
+    alert("Server error");
   });
 }
 
-function evaluate(id){
-  const assignments = JSON.parse(localStorage.getItem('assignments')||'[]');
-  const idx = assignments.findIndex(a=>a.id===id);
-  if(idx===-1) return;
-  const res = prompt('Enter evaluation');
-  if(res){
-    assignments[idx].result = res;
-    localStorage.setItem('assignments', JSON.stringify(assignments));
-    loadAssignments();
-  }
-}
-
-document.getElementById('assign-form').onsubmit=function(e){
+// Assign new assignments
+document.getElementById('assign-form').onsubmit = function(e) {
   e.preventDefault();
-  const emails = document.getElementById('assign-student-emails').value.split(',').map(e=>e.trim());
+
+  const emails = document.getElementById('assign-student-emails').value
+    .split(',')
+    .map(e => e.trim())
+    .filter(e => e);
+
   const type = document.getElementById('assignment-type').value;
-  const title = type==='experiment'?document.getElementById('experiment-name').value.trim():document.getElementById('quiz-title').value.trim();
-  const instructions = type==='experiment'?document.getElementById('experiment-instructions').value.trim():document.getElementById('quiz-link').value.trim();
-  if(!title) return alert('Assignment title required');
-  const assignments = JSON.parse(localStorage.getItem('assignments')||'[]');
-  emails.forEach(email=>assignments.push({id:Date.now()+Math.random(), student_regno:email,type,title,instructions,submission:false,result:null}));
-  localStorage.setItem('assignments', JSON.stringify(assignments));
-  this.reset();
-  loadAssignments();
+  const title = type === 'experiment'
+    ? document.getElementById('experiment-name').value.trim()
+    : document.getElementById('quiz-title').value.trim();
+  const instructions = type === 'experiment'
+    ? document.getElementById('experiment-instructions').value.trim()
+    : document.getElementById('quiz-link').value.trim();
+
+  if (!emails.length || !title) return alert("Missing required fields");
+const token = localStorage.getItem("token");
+
+
+ fetch("http://localhost:5000/assign_experiment", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + localStorage.getItem("token")
+  },
+  body: JSON.stringify({
+    student_emails: emails,       // ✅ array of emails
+    assignment_type: type,        // "experiment" or "quiz"
+    title: title,                 // string
+    instructions: instructions    // string
+  })
+})
+
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      alert(`Assigned to ${data.assigned_to.length} students ✅`);
+      document.getElementById('assign-form').reset();
+      loadAssignmentsFromDB();
+    } else {
+      alert("Error: " + data.error);
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Server error");
+  });
 }
 
-function clearAssignments(){
-  localStorage.removeItem('assignments');
-  loadAssignments();
+
+// Toggle assignment fields dynamically
+document.getElementById('assignment-type').onchange = function() {
+  document.getElementById('experiment-fields').style.display =
+    this.value === 'experiment' ? 'block' : 'none';
+  document.getElementById('quiz-fields').style.display =
+    this.value === 'quiz' ? 'block' : 'none';
 }
 
-// Toggle assignment fields
-document.getElementById('assignment-type').onchange = function(){
-  document.getElementById('experiment-fields').style.display = this.value==='experiment'?'block':'none';
-  document.getElementById('quiz-fields').style.display = this.value==='quiz'?'block':'none';
-}
 
 // ---------------- Announcements ----------------
-function loadAnnouncements(){
+function loadAnnouncements() {
   const ul = document.getElementById('announcement-list');
-  const announcements = JSON.parse(localStorage.getItem('announcements')||'[]');
+  const announcements = JSON.parse(localStorage.getItem('announcements') || '[]');
+
   ul.innerHTML = announcements.length ? '' : '<li>No announcements yet</li>';
-  announcements.forEach(a=>{
+
+  announcements.forEach(a => {
     const li = document.createElement('li');
-    li.innerHTML = `<strong>${a.title}</strong><small>${new Date(a.date).toLocaleString()}</small><p>${a.content}</p>`;
+    li.innerHTML = `
+      <strong>${a.title}</strong>
+      <small>${new Date(a.date).toLocaleString()}</small>
+      <p>${a.content}</p>
+    `;
     ul.appendChild(li);
   });
 }
 
-document.getElementById('announcement-form').onsubmit=function(e){
+document.getElementById('announcement-form').onsubmit = function(e) {
   e.preventDefault();
+
   const title = document.getElementById('announcement-title').value.trim();
   const content = document.getElementById('announcement-content').value.trim();
-  if(!title || !content) return;
-  const announcements = JSON.parse(localStorage.getItem('announcements')||'[]');
-  announcements.push({title,content,date:Date.now()});
+
+  if (!title || !content) return alert("Both title and content are required");
+
+  const announcements = JSON.parse(localStorage.getItem('announcements') || '[]');
+  announcements.push({ title, content, date: Date.now() });
+
   localStorage.setItem('announcements', JSON.stringify(announcements));
   this.reset();
   loadAnnouncements();
 }
 
-// Initial load
+
+// ---------------- Initial load ----------------
 loadStudents();
-loadAssignments();
+loadAssignmentsFromDB();
 loadAnnouncements();
+
 </script>
 </body>
 </html>
