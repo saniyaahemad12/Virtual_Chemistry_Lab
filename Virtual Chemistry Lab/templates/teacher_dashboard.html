@@ -366,10 +366,8 @@ navLinks.forEach(link => {
     });
   }
 });
-
-
 // ---------------- Students ----------------
-// ---------------- Students ----------------
+
 function loadStudents() {
   fetch("http://localhost:5000/get_students", {
     headers: {
@@ -440,9 +438,6 @@ function loadAssignmentsFromDB() {
   })
   .catch(err => console.error(err));
 }
-
-
-
 
 
 function evaluate(id) {
@@ -566,7 +561,6 @@ document.getElementById('announcement-form').onsubmit = function(e) {
   loadAnnouncements();
 }
 
-
 // ---------------- Initial load ----------------
 loadStudents();
 loadAssignmentsFromDB();
@@ -575,4 +569,5 @@ loadAnnouncements();
 </script>
 </body>
 </html>
+
 
